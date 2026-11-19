@@ -1,0 +1,690 @@
+<title>Bloodline Hawgs</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Alfa+Slab+One&family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<style>
+/* Layout: a ranch registry. Header ledger strip, herd board of ear-tagged hogs on the left, the selected hog's file on the right. */
+:root{
+  --loam:#1b1612; --loam-2:#241e18; --loam-3:#30281f; --line:#463a2d;
+  --fg:#efe6d8; --muted:#ab9c87; --tag:#f0c02e; --tag-ink:#231a04;
+  --good:#86c46f; --warn:#e7a43c; --bad:#e3634f; --info:#8db7d4;
+  --display:"Alfa Slab One", "Rockwell", "Roboto Slab", Georgia, serif;
+  --body:"IBM Plex Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"IBM Plex Mono", ui-monospace, "SFMono-Regular", Menlo, monospace;
+  color-scheme:dark;
+}
+html,body{background:var(--loam);color:var(--fg)}
+body{font-family:var(--body);font-size:14px;line-height:1.45}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,select:focus-visible{outline:2px solid var(--tag);outline-offset:2px}
+.app{max-width:1320px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 40px;display:flex;flex-direction:column;gap:14px}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+h1,h2,h3{font-family:var(--display);font-weight:400;margin:0;text-wrap:balance;letter-spacing:.01em}
+h1{font-size:clamp(26px,4vw,38px);line-height:1}
+h2{font-size:20px}
+h3{font-size:15px}
+.eyebrow{font-size:11px;text-transform:uppercase;letter-spacing:.12em;color:var(--muted);font-weight:600}
+
+/* header */
+.top{display:flex;flex-wrap:wrap;align-items:flex-end;gap:14px 24px;border-bottom:2px solid var(--line);padding-bottom:12px}
+.brand{display:flex;flex-direction:column;gap:4px;margin-right:auto}
+.brand h1 span{color:var(--tag)}
+.stats{display:flex;flex-wrap:wrap;gap:6px 18px}
+.stat{display:flex;flex-direction:column}
+.stat b{font-family:var(--mono);font-size:18px;font-weight:600;font-variant-numeric:tabular-nums}
+.stat b.neg{color:var(--bad)}
+.actions{display:flex;flex-wrap:wrap;gap:8px}
+.btn{background:var(--loam-3);border:1px solid var(--line);border-radius:6px;padding:7px 12px;font-weight:500}
+.btn:hover{border-color:var(--muted)}
+.btn.primary{background:var(--tag);color:var(--tag-ink);border-color:var(--tag);font-weight:600}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.danger{border-color:var(--bad);color:var(--bad)}
+.btn.small{padding:4px 9px;font-size:12.5px}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 390px;gap:16px;align-items:start}
+@media (max-width:960px){.layout{grid-template-columns:minmax(0,1fr)}}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;border-bottom:1px solid var(--line);margin-bottom:12px}
+.tab{background:none;border:none;border-bottom:3px solid transparent;padding:8px 12px;color:var(--muted);font-weight:600}
+.tab[aria-selected="true"]{color:var(--fg);border-bottom-color:var(--tag)}
+.panel{background:var(--loam-2);border:1px solid var(--line);border-radius:10px;padding:14px}
+
+/* breeding chute */
+.chute{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px}
+.chute .slot{border:1px dashed var(--line);border-radius:8px;padding:8px 10px;min-height:62px;display:flex;align-items:center;gap:10px;min-width:0}
+.chute .slot.filled{border-style:solid;background:var(--loam-3)}
+.chute .slot svg{width:70px;flex:none}
+.chute .pred{grid-column:1/-1;min-width:0}
+.pred-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:8px 16px;margin-top:8px}
+.pred-grid div{min-width:0}
+.bar{display:flex;height:8px;border-radius:4px;overflow:hidden;background:var(--loam);margin:3px 0}
+.bar i{display:block;height:100%}
+.F-chip{display:inline-block;padding:1px 8px;border-radius:99px;font-family:var(--mono);font-size:12px;font-weight:600}
+.F-ok{background:color-mix(in srgb,var(--good) 22%,transparent);color:var(--good)}
+.F-mid{background:color-mix(in srgb,var(--warn) 22%,transparent);color:var(--warn)}
+.F-hi{background:color-mix(in srgb,var(--bad) 22%,transparent);color:var(--bad)}
+
+/* herd */
+.filters{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:10px}
+select{background:var(--loam-3);color:var(--fg);border:1px solid var(--line);border-radius:6px;padding:5px 8px;font:inherit}
+.herd{display:grid;grid-template-columns:repeat(auto-fill,minmax(168px,1fr));gap:10px}
+.card{position:relative;text-align:left;background:var(--loam-2);border:1px solid var(--line);border-radius:10px;padding:10px 10px 9px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.card:hover{border-color:var(--muted)}
+.card.sel{border-color:var(--tag);box-shadow:0 0 0 1px var(--tag)}
+.card .row{display:flex;justify-content:space-between;gap:6px;align-items:center}
+.card .nm{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card .facts{font-family:var(--mono);font-size:11.5px;color:var(--muted);display:flex;flex-wrap:wrap;gap:2px 8px}
+.card svg{width:100%;height:auto;max-width:100%}
+.tag{position:relative;display:inline-flex;align-items:center;background:var(--tag);color:var(--tag-ink);font-family:var(--mono);font-weight:600;font-size:12px;padding:1px 7px 1px 15px;border-radius:9px 4px 4px 9px}
+.tag::before{content:"";position:absolute;left:5px;top:50%;width:5px;height:5px;margin-top:-2.5px;border-radius:50%;background:var(--loam-2)}
+.sex{font-family:var(--mono);font-weight:600}
+.sex.M{color:var(--info)} .sex.F{color:#e59ab7}
+.pill{display:inline-block;font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;padding:1px 6px;border-radius:4px;background:var(--loam-3);color:var(--muted)}
+.pill.preg{background:color-mix(in srgb,#e59ab7 25%,transparent);color:#f0b6cb}
+.pill.frail{background:color-mix(in srgb,var(--bad) 25%,transparent);color:var(--bad)}
+.pill.legend{background:var(--tag);color:var(--tag-ink)}
+.pill.young{background:color-mix(in srgb,var(--info) 22%,transparent);color:var(--info)}
+
+/* detail */
+.detail{position:sticky;top:calc(env(safe-area-inset-top,0px) + 10px);display:flex;flex-direction:column;gap:12px}
+@media (max-width:960px){.detail{position:static}}
+.dl{display:grid;grid-template-columns:auto 1fr;gap:3px 12px;margin:0}
+.dl dt{color:var(--muted)}
+.dl dd{margin:0;font-family:var(--mono);font-variant-numeric:tabular-nums;min-width:0}
+.sect{border-top:1px solid var(--line);padding-top:10px;display:flex;flex-direction:column;gap:6px}
+.gt{display:grid;grid-template-columns:auto auto 1fr;gap:3px 10px;font-family:var(--mono);font-size:12.5px;align-items:baseline}
+.gt .loc{color:var(--muted)}
+.gt .al{font-weight:600}
+.ped{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font-size:12.5px}
+.ped button{background:none;border:none;padding:0;text-align:left;color:var(--tag);text-decoration:underline;text-underline-offset:2px}
+.btnrow{display:flex;flex-wrap:wrap;gap:6px}
+.good{color:var(--good)} .warn{color:var(--warn)} .bad{color:var(--bad)}
+
+/* market */
+.contracts{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:10px}
+.contract{display:flex;flex-direction:column;gap:6px}
+.contract ul{margin:0;padding-left:18px;font-size:13px}
+.contract .reward{font-family:var(--mono);font-weight:600;color:var(--tag);font-size:18px}
+.legend-box{border-color:var(--tag)}
+.check{list-style:none;padding:0;margin:0;display:flex;flex-direction:column;gap:2px;font-size:13px}
+.check li::before{content:"○ ";color:var(--muted)}
+.check li.ok::before{content:"● ";color:var(--good)}
+
+/* log & guide */
+.log{font-family:var(--mono);font-size:12.5px;display:flex;flex-direction:column;gap:3px;max-height:70vh;overflow:auto}
+.log .s{color:var(--tag)}
+.guide{max-width:72ch;display:flex;flex-direction:column;gap:10px}
+.guide p{margin:0}
+.math{font-family:"Cambria Math","STIX Two Math","Latin Modern Math",Georgia,serif;font-size:15px;font-style:italic;white-space:nowrap}
+.math .up{font-style:normal}
+.mapwrap{overflow-x:auto}
+table{border-collapse:collapse;font-size:12.5px;width:100%}
+th,td{text-align:left;padding:4px 8px;border-bottom:1px solid var(--line)}
+th{color:var(--muted);font-weight:600}
+.tablewrap{overflow-x:auto}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(16px + env(safe-area-inset-bottom,0px));background:var(--tag);color:var(--tag-ink);font-weight:600;padding:8px 14px;border-radius:8px;max-width:calc(100% - 32px);z-index:20}
+.banner{border:2px solid var(--tag);background:color-mix(in srgb,var(--tag) 12%,var(--loam-2));border-radius:10px;padding:12px 14px}
+.banner.bad{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 12%,var(--loam-2))}
+@media (prefers-reduced-motion:no-preference){.card{transition:border-color .12s}}
+@media (max-width:520px){.chute{grid-template-columns:1fr}.herd{grid-template-columns:repeat(2,minmax(0,1fr))}}
+</style>
+
+<div class="app" id="app"></div>
+<div class="toast" id="toast" hidden></div>
+
+<script>
+"use strict";
+/* ================= GENETIC MODEL ================= */
+const CHROMS=[{id:'1',len:200},{id:'4',len:140},{id:'6',len:150},{id:'8',len:130},{id:'13',len:140},{id:'X',len:120}];
+const QT_VALS=[-1,0,1,2], QT_W=[.30,.40,.22,.08];
+const LOAD_FREQ=.07;
+const LOCI=[
+ {id:'MC1R',chr:'6',pos:10,type:'major',panel:'coat',alleles:['ED','EP','E','e'],freq:[.22,.10,.58,.10],name:'MC1R (extension)'},
+ {id:'RYR1',chr:'6',pos:40,type:'major',panel:'health',alleles:['N','n'],freq:[.85,.15],name:'RYR1 (halothane)'},
+ {id:'T1',chr:'6',pos:90,type:'qt',trait:'tusk'},
+ {id:'D6',chr:'6',pos:130,type:'load'},
+ {id:'D8',chr:'8',pos:15,type:'load'},
+ {id:'KIT',chr:'8',pos:45,type:'major',panel:'coat',alleles:['I','Be','i'],freq:[.07,.10,.83],name:'KIT (white/belt)'},
+ {id:'S1',chr:'8',pos:58,type:'qt',trait:'size'},
+ {id:'L1',chr:'8',pos:105,type:'qt',trait:'litter'},
+ {id:'D1a',chr:'1',pos:10,type:'load'},
+ {id:'S2',chr:'1',pos:35,type:'qt',trait:'size'},
+ {id:'A1',chr:'1',pos:80,type:'qt',trait:'temper'},
+ {id:'T2',chr:'1',pos:140,type:'qt',trait:'tusk'},
+ {id:'D1b',chr:'1',pos:185,type:'load'},
+ {id:'S3',chr:'4',pos:20,type:'qt',trait:'size'},
+ {id:'D4',chr:'4',pos:50,type:'load'},
+ {id:'L2',chr:'4',pos:75,type:'qt',trait:'litter'},
+ {id:'A2',chr:'4',pos:120,type:'qt',trait:'temper'},
+ {id:'D13a',chr:'13',pos:10,type:'load'},
+ {id:'T3',chr:'13',pos:45,type:'qt',trait:'tusk'},
+ {id:'A3',chr:'13',pos:70,type:'qt',trait:'temper'},
+ {id:'WUR',chr:'13',pos:100,type:'major',panel:'health',alleles:['B','A'],freq:[.20,.80],name:'WUR (PRRS tolerance)'},
+ {id:'D13b',chr:'13',pos:130,type:'load'},
+ {id:'DX',chr:'X',pos:20,type:'load'},
+ {id:'RDG',chr:'X',pos:60,type:'major',panel:'coat',alleles:['R','r'],freq:[.12,.88],name:'RDG (ridgeback, X-linked)'},
+];
+const LOC={}, CHR_LOCI={};
+CHROMS.forEach(c=>CHR_LOCI[c.id]=[]);
+LOCI.slice().sort((a,b)=>a.pos-b.pos).forEach(L=>{L.idx=CHR_LOCI[L.chr].length;CHR_LOCI[L.chr].push(L);LOC[L.id]=L});
+const TRAIT={ // effect per allele, base, env sd
+ size:{eff:20,base:175,env:35,unit:'lb'},
+ tusk:{eff:.45,base:2.2,env:.7,unit:'in'},
+ temper:{eff:6,base:50,env:10,unit:''},
+ litter:{eff:.4,base:6,env:1.0,unit:''},
+};
+const QT_MEAN=QT_VALS.reduce((s,v,i)=>s+v*QT_W[i],0);
+const QT_VAR=QT_VALS.reduce((s,v,i)=>s+QT_W[i]*(v-QT_MEAN)**2,0);
+function nLoci(t){return LOCI.filter(L=>L.trait===t).length*2}
+const H2={};for(const t in TRAIT){const g=nLoci(t)*QT_VAR*TRAIT[t].eff**2;const e=TRAIT[t].env**2+(t==='litter'?1.5**2:0);H2[t]=g/(g+e)}
+const MU={};for(const t in TRAIT)MU[t]=TRAIT[t].base+TRAIT[t].eff*nLoci(t)*QT_MEAN;
+const PANELS={
+ coat:{name:'Coat & hair panel',cost:15,desc:'KIT, MC1R, RDG genotypes'},
+ health:{name:'Health panel',cost:20,desc:'RYR1 stress gene, WUR PRRS tolerance'},
+ ebv:{name:'Genomic EBV',cost:45,desc:'Breeding values for size, tusks, temper, litter'},
+ load:{name:'Recessive load screen',cost:60,desc:'Carrier status at hidden lethal loci'},
+};
+const DOM={KIT:['I','Be','i'],MC1R:['ED','EP','E','e']};
+const BASECOAT={ED:'Black',EP:'Spotted',E:'Wild',e:'Red'};
+const NAMES=['Big Earl','Rooter','Mudpie','Hambone','Duchess','Truffle','Bristle','Tusker','Ol’ Grizz','Peaches','Biscuit','Wallow','Gravy','Sorghum','Boudin','Cracklin','Clementine','Sassafras','Pecan','Brisket','Junebug','Possum','Tater','Cottonmouth','Ruckus','Beulah','Hickory','Mesquite','Rutabaga','Dumplin','Okra','Chigger','Loretta','Bubba','Muddy Waters','Sweet Tea','Grits','Molasses','Thistle','Bramble','Cocklebur','Persimmon','Gumbo','Hush Puppy','Dixie','Rawhide','Pinto','Sage','Chicory','Cayenne','Boone','Tallow','Thunder','Ladybird','Opal','Mabel','Rufus','Cletus','Agnes','Hazel'];
+const SEASONS=['Spring','Summer','Fall','Winter'];
+const LEGEND={sex:'M',coat:'Red Belted',ridge:true,tuskMin:4.8,weightMin:300,temperMax:35,certNN:true};
+
+const rnd=Math.random;
+function gauss(){let u=0;while(!u)u=rnd();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*rnd())}
+function wpick(vals,w){let r=rnd(),s=0;for(let i=0;i<vals.length;i++){s+=w[i];if(r<s)return vals[i]}return vals[vals.length-1]}
+function pick(a){return a[Math.floor(rnd()*a.length)]}
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+function sampleAllele(L){
+ if(L.type==='major')return wpick(L.alleles,L.freq);
+ if(L.type==='qt')return wpick(QT_VALS,QT_W);
+ return rnd()<LOAD_FREQ?1:0;
+}
+function wildHap(){
+ const h={};
+ for(const c of CHROMS){
+  const arr=CHR_LOCI[c.id].map(sampleAllele);
+  h[c.id]=arr;
+ }
+ // founder linkage disequilibrium: belt haplotypes tend to carry a small-size allele at S1; ridgeback X tends to carry the DX lethal
+ if(h['8'][LOC.KIT.idx]==='Be'&&rnd()<.7)h['8'][LOC.S1.idx]=-1;
+ if(h.X[LOC.RDG.idx]==='R'&&rnd()<.45)h.X[LOC.DX.idx]=1;
+ return h;
+}
+function meiosis(h){
+ const g={};
+ for(const c of CHROMS){
+  if(c.id==='X'&&h.sex==='M'){g.X=rnd()<.5?null:h.mat.X.slice();continue}
+  let s=rnd()<.5,prev=null;const arr=[];
+  CHR_LOCI[c.id].forEach((L,k)=>{
+   if(prev!=null){const d=(L.pos-prev)/100;if(rnd()<.5*(1-Math.exp(-2*d)))s=!s}
+   prev=L.pos;arr.push((s?h.mat:h.pat)[c.id][k]);
+  });
+  g[c.id]=arr;
+ }
+ return g;
+}
+const MUT={major:.004,qt:.008,load:.002};
+function mutate(g,notes){
+ for(const c of CHROMS){
+  if(!g[c.id])continue;
+  CHR_LOCI[c.id].forEach((L,k)=>{
+   if(rnd()>=MUT[L.type])return;
+   const old=g[c.id][k];
+   if(L.type==='major'){const o=L.alleles.filter(a=>a!==old);g[c.id][k]=pick(o);notes.push(`${L.id}: ${old}→${g[c.id][k]}`)}
+   else if(L.type==='qt'){g[c.id][k]=clamp(old+(rnd()<.5?-1:1),-1,3);if(g[c.id][k]!==old)notes.push(`${L.id} (${L.trait}) ${old>g[c.id][k]?'−':'+'}1`)}
+   else if(old===0){g[c.id][k]=1}
+  });
+ }
+}
+function gt(h,id){const L=LOC[id];const a=h.mat[L.chr][L.idx];const p=h.pat[L.chr];return [a,p?p[L.idx]:null]}
+function topAllele(locus,pair){const o=DOM[locus];return o[Math.min(...pair.filter(x=>x!=null).map(a=>o.indexOf(a)))]}
+function coatFrom(k,m){const kt=topAllele('KIT',k);if(kt==='I')return 'White';const b=BASECOAT[topAllele('MC1R',m)];return kt==='Be'?b+' Belted':b}
+function coatOf(h){return coatFrom(gt(h,'KIT'),gt(h,'MC1R'))}
+function trueBreeding(h){const k=gt(h,'KIT'),m=gt(h,'MC1R');return k[0]===k[1]&&m[0]===m[1]}
+function ridge(h){const g=gt(h,'RDG');return h.sex==='M'?g[0]==='R':(g[0]==='R'&&g[1]==='R')}
+function nCount(h){return gt(h,'RYR1').filter(a=>a==='n').length}
+function wurTol(h){return gt(h,'WUR').includes('B')}
+function qsum(h,t){let s=0;for(const L of LOCI)if(L.trait===t){const g=gt(h,L.id);s+=g[0]+(g[1]??0)}return s}
+function loadHomo(h){const out=[];for(const L of LOCI)if(L.type==='load'){const g=gt(h,L.id);if(L.chr==='X'&&h.sex==='M'?g[0]===1:(g[0]===1&&g[1]===1))out.push(L.id)}return out}
+function carriers(h){return LOCI.filter(L=>L.type==='load').filter(L=>gt(h,L.id).includes(1)).map(L=>L.id)}
+
+/* phenotypes */
+const ageOf=h=>S.season-h.born;
+function matureWeight(h){let w=TRAIT.size.base+TRAIT.size.eff*qsum(h,'size')+h.env.size*TRAIT.size.env;w*=(1-.2*h.F);if(h.frail)w*=.85;if(h.sex==='F')w*=.88;return clamp(w,70,560)}
+function weight(h){return matureWeight(h)*Math.min(1,.18+ageOf(h)*.27)}
+function matureTusk(h){const t=TRAIT.tusk.base+TRAIT.tusk.eff*qsum(h,'tusk')+h.env.tusk*TRAIT.tusk.env;return Math.max(.4,t)*(h.sex==='M'?1:.3)}
+function tusk(h){return matureTusk(h)*clamp((ageOf(h)-1)/7,.1,1)}
+function temper(h){return clamp(Math.round(TRAIT.temper.base+TRAIT.temper.eff*qsum(h,'temper')+h.env.temper*TRAIT.temper.env),0,100)}
+function lean(h){return 50+[0,2.5,7][nCount(h)]+h.env.lean*2}
+function litterMean(h){return TRAIT.litter.base+TRAIT.litter.eff*qsum(h,'litter')+h.env.litter*TRAIT.litter.env-6*h.F-(ageOf(h)>16?1.5:0)-(h.frail?1:0)}
+function bestLitter(h){return h.litters.reduce((m,l)=>Math.max(m,l.alive),0)}
+function ebv(h,t){return (qsum(h,t)-nLoci(t)*QT_MEAN)*TRAIT[t].eff}
+
+/* pedigree kinship (Wright / Malécot coancestry) */
+let kinMemo=new Map();
+function kin(a,b){
+ if(a==null||b==null)return 0;
+ if(a===b){return .5*(1+(H(a).F||0))}
+ const key=a<b?a+'_'+b:b+'_'+a;
+ if(kinMemo.has(key))return kinMemo.get(key);
+ const y=Math.max(a,b),o=Math.min(a,b),hy=H(y);
+ const v=hy.sire==null?0:.5*(kin(o,hy.sire)+kin(o,hy.dam));
+ kinMemo.set(key,v);return v;
+}
+
+/* ================= GAME STATE ================= */
+let S;
+const H=id=>S.hogs[id];
+function herd(){return Object.values(S.hogs).filter(h=>h.status==='herd')}
+function newHog(o){const id=S.nextId++;const h=Object.assign({id,name:pick(NAMES),status:'herd',sire:null,dam:null,F:0,frail:false,litters:[],tested:{},preg:null,mut:[],env:{size:gauss(),tusk:gauss(),temper:gauss(),litter:gauss(),lean:gauss()}},o);S.hogs[id]=h;return h}
+function wildHog(){const sex=rnd()<.5?'M':'F';const mat=wildHap(),pat=wildHap();if(sex==='M')pat.X=null;return newHog({sex,mat,pat,born:S.season-(1+Math.floor(rnd()*8)),wild:true})}
+function log(msg,cls){S.log.unshift({s:S.season,msg,cls});if(S.log.length>220)S.log.length=220}
+function seasonName(s){return `${SEASONS[s%4]} Y${Math.floor(s/4)+1}`}
+
+function newGame(){
+ S={season:0,cash:600,cap:10,expansions:0,nextId:1,hogs:{},log:[],contracts:[],fashion:'Black Belted',debt:0,legendAt:null,over:false,tab:'herd',sel:null,pick:{dam:null,sire:null},filter:'all',sort:'id',confirm:null,cid:1};
+ kinMemo=new Map();
+ let tries=0;
+ while((herd().filter(h=>h.sex==='F').length<2||herd().filter(h=>h.sex==='M').length<2)&&tries++<50){
+  const h=wildHog();const n=herd().filter(x=>x.sex===h.sex).length;if(n>2){delete S.hogs[h.id]}
+ }
+ herd().forEach(h=>{h.born=S.season-3-Math.floor(rnd()*4)});
+ for(let i=0;i<3;i++)S.contracts.push(makeContract());
+ S.fashion=pick(['Black Belted','Red','Spotted','Wild Belted']);
+ log('You bought the old Hollow Creek place with four trapped hawgs and $600. Feed is due every season.','s');
+ S.sel=herd()[0].id;
+}
+
+/* ================= CONTRACTS ================= */
+function makeContract(){
+ const yr=Math.floor(S.season/4);const k=pick(['preserve','show','packer','seed','biosec']);
+ const c={id:S.cid++,expires:S.season+8};
+ if(k==='preserve'){const t=+(3.4+rnd()*.8+yr*.15).toFixed(1);c.who='Bar-T Hunting Preserve';c.spec={sex:'M',tuskMin:t,temperMin:60};c.reward=Math.round(260+(t-3)*260)}
+ if(k==='show'){const co=pick(['Black Belted','Red','Spotted','Red Belted','Wild Belted','Black','Spotted Belted']);c.who='Tri-County Heritage Show';c.spec={coat:co,trueBreeding:true};c.reward=co.includes('Red')?650:co==='Black'?320:480}
+ if(k==='packer'){const w=Math.round(250+rnd()*50+yr*12);const l=+(53+rnd()*2).toFixed(1);c.who='Delta Meat Packers';c.spec={weightMin:w,leanMin:l,certNN:true};c.reward=Math.round(200+(w-200)*2.2+(l-50)*40)}
+ if(k==='seed'){const l=7+Math.floor(rnd()*2+yr*.3);c.who='Riverbend Seedstock';c.spec={sex:'F',litterMin:Math.min(l,11),temperMax:45};c.reward=300+(l-6)*120}
+ if(k==='biosec'){c.who='State Ag Extension trial';c.spec={certWUR:true,Fmax:.02,weightMin:180};c.reward=380}
+ return c;
+}
+function specChecks(h,s){
+ const r=[];
+ r.push(['Grown (2+ seasons)',ageOf(h)>=2]);
+ if(s.sex)r.push([s.sex==='M'?'Boar':'Sow',h.sex===s.sex]);
+ if(s.coat)r.push([`Coat: ${s.coat}`,coatOf(h)===s.coat]);
+ if(s.trueBreeding)r.push(['Certified true-breeding coat (tested homozygous)',!!h.tested.coat&&trueBreeding(h)]);
+ if(s.ridge)r.push(['Ridgeback mane',ridge(h)]);
+ if(s.tuskMin)r.push([`Tusks ≥ ${s.tuskMin.toFixed(1)} in`,tusk(h)>=s.tuskMin]);
+ if(s.weightMin)r.push([`Weight ≥ ${s.weightMin} lb`,weight(h)>=s.weightMin]);
+ if(s.leanMin)r.push([`Lean ≥ ${s.leanMin}%`,lean(h)>=s.leanMin]);
+ if(s.temperMin!=null)r.push([`Temper ≥ ${s.temperMin} (game)`,temper(h)>=s.temperMin]);
+ if(s.temperMax!=null)r.push([`Temper ≤ ${s.temperMax} (docile)`,temper(h)<=s.temperMax]);
+ if(s.certNN)r.push(['Certified stress-free RYR1 N/N',!!h.tested.health&&nCount(h)===0]);
+ if(s.certWUR)r.push(['Certified PRRS-tolerant (WUR B carrier)',!!h.tested.health&&wurTol(h)]);
+ if(s.Fmax!=null)r.push([`Pedigree F ≤ ${s.Fmax}`,h.F<=s.Fmax]);
+ if(s.litterMin)r.push([`Farrowed a litter of ≥ ${s.litterMin} live`,bestLitter(h)>=s.litterMin]);
+ return r;
+}
+const meets=(h,s)=>specChecks(h,s).every(x=>x[1]);
+
+/* ================= ECONOMY ================= */
+function price(h){
+ if(ageOf(h)<2)return Math.round(18+weight(h)*.5);
+ let p=weight(h)*.7*(1+(lean(h)-50)*.025);
+ if(h.sex==='M'){const t=tusk(h);if(t>3.5)p+=(t-3.5)**2*90}
+ if(coatOf(h)===S.fashion)p*=1.4;
+ if(temper(h)>80)p*=.8;
+ if(ridge(h))p+=60;
+ if(h.frail)p*=.6;
+ return Math.round(p);
+}
+function feedCost(h){return ageOf(h)<2?6:18}
+function expandCost(){return Math.round(250*(1+S.expansions*.5))}
+
+/* ================= ACTIONS ================= */
+function trap(){
+ if(S.cash<35)return toast('You need $35 for trap bait and a trailer run.');
+ S.cash-=35;const n=1+(rnd()<.45?1:0)+(rnd()<.15?1:0);const got=[];
+ for(let i=0;i<n;i++)got.push(wildHog());
+ log(`Corral trap caught ${got.map(h=>`#${pad(h.id)} ${h.name} (${h.sex==='M'?'boar':'sow'}, ${coatOf(h)})`).join(', ')}.`);
+ S.sel=got[0].id;toast(`Caught ${n} wild hawg${n>1?'s':''}.`);
+}
+function expand(){const c=expandCost();if(S.cash<c)return toast(`Expanding costs $${c}.`);S.cash-=c;S.cap+=6;S.expansions++;log(`Built a new hog-panel pen: capacity ${S.cap}.`);toast(`Pens hold ${S.cap} now.`)}
+function test(id,p){const h=H(id),P=PANELS[p];if(h.tested[p])return;if(S.cash<P.cost)return toast(`${P.name} costs $${P.cost}.`);S.cash-=P.cost;h.tested[p]=true;log(`Lab: ${P.name} on #${pad(id)} ${h.name}.`);toast(`${P.name} results are in.`)}
+function canBreed(){
+ const d=H(S.pick.dam),s=H(S.pick.sire);
+ if(!d||!s)return 'Pick a sow and a boar.';
+ if(d.status!=='herd'||s.status!=='herd')return 'Both hogs must be in the herd.';
+ if(ageOf(d)<2||ageOf(s)<2)return 'Both need to be at least 2 seasons old.';
+ if(d.preg)return `${d.name} is already bred.`;
+ return null;
+}
+function breed(){const e=canBreed();if(e)return toast(e);const d=H(S.pick.dam),s=H(S.pick.sire);d.preg={sire:s.id,due:S.season+1};log(`Bred #${pad(d.id)} ${d.name} × #${pad(s.id)} ${s.name}. Expected F = ${kin(d.id,s.id).toFixed(3)}. Due next season.`);toast(`${d.name} is bred. Piglets arrive next season.`);S.pick.dam=null}
+function sell(id){
+ const h=H(id);const p=price(h);
+ if(nCount(h)===2&&rnd()<.12){h.status='dead';log(`#${pad(id)} ${h.name} died of porcine stress syndrome on the trailer (RYR1 n/n). No sale.`,'bad');toast(`${h.name} died in transport.`)}
+ else{h.status='sold';S.cash+=p;log(`Sold #${pad(id)} ${h.name} at the sale barn for $${p}.`);toast(`Sold for $${p}.`)}
+ clearPicks(id);
+}
+function deliver(cid,id){
+ const c=S.contracts.find(x=>x.id===cid),h=H(id);if(!c||!meets(h,c.spec))return;
+ h.status='sold';S.cash+=c.reward;S.contracts=S.contracts.filter(x=>x!==c);
+ log(`Delivered #${pad(id)} ${h.name} to ${c.who} for $${c.reward}.`,'good');toast(`Contract paid $${c.reward}.`);clearPicks(id);
+}
+function clearPicks(id){if(S.pick.dam===id)S.pick.dam=null;if(S.pick.sire===id)S.pick.sire=null}
+
+function farrow(d){
+ const s=H(d.preg.sire);const F=kin(d.id,s.id);
+ const n=Math.max(1,Math.round(litterMean(d)+gauss()*1.5));
+ let alive=0,still=0;const born=[];
+ for(let i=0;i<n;i++){
+  const notes=[];const gm=meiosis(d),gp=meiosis(s);mutate(gm,notes);mutate(gp,notes);
+  const sex=gp.X?'F':'M';
+  const pig={sex,mat:gm,pat:gp,born:S.season,sire:s.id,dam:d.id,F,mut:notes};
+  // viability: homozygous recessive load
+  const tmp={...pig,sex};const homo=loadHomo(tmp);
+  let dies=homo.some(()=>rnd()<.75)||rnd()<F*.25;
+  if(dies){still++;continue}
+  const h=newHog(pig);h.frail=homo.length>0;alive++;born.push(h);
+  if(notes.length)log(`De novo mutation in piglet #${pad(h.id)}: ${notes.join(', ')}.`,'info');
+ }
+ d.litters.push({s:S.season,born:n,alive,sire:s.id});d.preg=null;
+ log(`#${pad(d.id)} ${d.name} farrowed ${n}: ${alive} alive${still?`, ${still} stillborn`:''} (sire #${pad(s.id)} ${s.name}, F = ${F.toFixed(3)}).`,still>n/2?'bad':null);
+}
+function advance(){
+ if(S.over)return;
+ S.season++;S.confirm=null;
+ if(S.season%4===0){S.fashion=pick(['Black Belted','Red','Spotted','Wild Belted','Red Belted','Black','White','Spotted Belted'].filter(c=>c!==S.fashion));log(`New year. Buyers are paying 40% extra for ${S.fashion} coats.`,'s')}
+ herd().filter(h=>h.preg&&h.preg.due<=S.season).forEach(farrow);
+ // feed
+ const hs=herd();const feed=hs.reduce((a,h)=>a+feedCost(h),0);S.cash-=feed;
+ log(`${seasonName(S.season)}: feed and vet for ${hs.length} head cost $${feed}.`,'s');
+ // disease
+ if(S.season>4&&rnd()<.11){
+  const dead=[];
+  hs.forEach(h=>{const p=wurTol(h)?.03:.2+h.F*.6+(h.frail?.25:0);if(rnd()<p){h.status='dead';dead.push(h)}});
+  log(`PRRS outbreak swept the pens. Lost ${dead.length}: ${dead.map(h=>'#'+pad(h.id)).join(', ')||'none'}. Tolerant (WUR B) hogs mostly shrugged it off.`,'bad');
+ }
+ // escapes, crowding, aging
+ const count=herd().length;const crowd=Math.max(0,(count-S.cap)/S.cap);
+ if(crowd>0)log(`Pens are over capacity (${count}/${S.cap}). Crowding is killing piglets.`,'bad');
+ herd().forEach(h=>{
+  const a=ageOf(h);
+  if(a>=2&&temper(h)>85&&rnd()<.05){h.status='escaped';log(`#${pad(h.id)} ${h.name} (temper ${temper(h)}) tore through the hog panel and went back to the bottoms.`,'bad');return}
+  let p=.01+(a>16?(a-16)*.025:0)+(a<2?crowd*.3:0)+(h.frail?.04:0);
+  if(rnd()<p){h.status='dead';log(`#${pad(h.id)} ${h.name} died${a>16?' of old age':''}.`)}
+ });
+ // contracts
+ S.contracts=S.contracts.filter(c=>{if(c.expires<=S.season){log(`Contract with ${c.who} expired.`);return false}return true});
+ while(S.contracts.length<3)S.contracts.push(makeContract());
+ // money
+ if(S.cash<0){S.debt++;log(S.debt>=2?'Second season in the red. The bank foreclosed on Hollow Creek.':'You are in the red. Sell stock before next season or the bank forecloses.','bad');if(S.debt>=2)S.over=true}else S.debt=0;
+ if(!S.legendAt){const L=herd().find(h=>meets(h,LEGEND));if(L){S.legendAt=S.season;log(`#${pad(L.id)} ${L.name} meets every mark of the Legend. You bred it in ${S.season} seasons.`,'good')}}
+ [S.pick.dam,S.pick.sire].forEach(id=>{if(id&&H(id).status!=='herd')clearPicks(id)});
+ save();
+}
+
+/* ================= PREDICTION ================= */
+function gametes(h,id){const g=gt(h,id);return g[1]==null?[[g[0],1]]:[[g[0],.5],[g[1],.5]]}
+function predictCoat(d,s){
+ const res={};
+ for(const [k1,p1] of gametes(d,'KIT'))for(const [k2,p2] of gametes(s,'KIT'))
+ for(const [m1,q1] of gametes(d,'MC1R'))for(const [m2,q2] of gametes(s,'MC1R')){const c=coatFrom([k1,k2],[m1,m2]);res[c]=(res[c]||0)+p1*p2*q1*q2}
+ return Object.entries(res).sort((a,b)=>b[1]-a[1]);
+}
+function predictRidge(d,s){
+ const dg=gt(d,'RDG'),sx=gt(s,'RDG')[0];const pR=dg.filter(a=>a==='R').length/2;
+ return {sons:pR,daughters:sx==='R'?pR:0};
+}
+function predictRYR(d,s){const a=gt(d,'RYR1').filter(x=>x==='n').length/2,b=gt(s,'RYR1').filter(x=>x==='n').length/2;return {nn:a*b,Nn:a*(1-b)+b*(1-a),NN:(1-a)*(1-b)}}
+function predictWUR(d,s){const a=gt(d,'WUR').filter(x=>x==='A').length/2,b=gt(s,'WUR').filter(x=>x==='A').length/2;return 1-a*b}
+function predictLoad(d,s){
+ let surv=1;
+ for(const L of LOCI)if(L.type==='load'){
+  if(L.chr==='X'){const pd=gt(d,L.id).filter(x=>x===1).length/2;const ps=gt(s,L.id)[0]===1?1:0;const pSon=pd,pDau=pd*ps;surv*=1-.75*(.5*pSon+.5*pDau)}
+  else{const pd=gt(d,L.id).filter(x=>x===1).length/2,ps=gt(s,L.id).filter(x=>x===1).length/2;surv*=1-.75*pd*ps}
+ }
+ return 1-surv;
+}
+function predQT(d,s,t){
+ // returns {val, how}
+ if(d.tested.ebv&&s.tested.ebv){return {v:TRAIT[t].base+TRAIT[t].eff*(qsum(d,t)+qsum(s,t))/2,how:'gEBV'}}
+ const mu=MU[t];
+ if(t==='tusk'){if(ageOf(s)<8)return null;return {v:mu+H2.tusk/2*(matureTusk(s)-mu),how:'sire only, h²'}}
+ if(t==='litter'){if(!d.litters.length)return null;const avg=d.litters.reduce((a,l)=>a+l.born,0)/d.litters.length;return {v:mu+H2.litter/2*(avg-mu),how:'dam record, h²'}}
+ if(t==='size'){const pd=matureWeight(d)/.88,ps=matureWeight(s);return {v:mu+H2.size*((pd+ps)/2-mu),how:'midparent, h²'}}
+ if(t==='temper'){return {v:mu+H2.temper*((temper(d)+temper(s))/2-mu),how:'midparent, h²'}}
+}
+
+/* ================= RENDER ================= */
+const pad=n=>String(n).padStart(3,'0');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+let svgSeq=0;
+function seeded(n){let x=n*9301+49297;return()=>((x=(x*9301+49297)%233280)/233280)}
+const COATCOL={Black:'#2c2522',Red:'#a5532d',Wild:'#6b5338',Spotted:'#d39b7b',White:'#ecdcd3'};
+function hogSVG(h){
+ const u=++svgSeq;const c=coatOf(h);const base=c.split(' ')[0];const belt=c.includes('Belted');const col=COATCOL[base];
+ const w=weight(h);const sc=.55+.45*clamp(w/380,0,1);const r=seeded(h.id);
+ const skin=base==='Black'?'#4c3c37':'#c78c80';
+ let extra='';
+ if(base==='Spotted')for(let i=0;i<6;i++)extra+=`<ellipse cx="${30+r()*52}" cy="${32+r()*22}" rx="${3+r()*5}" ry="${2.5+r()*4}" fill="#2c2522"/>`;
+ if(base==='Wild')extra+=`<path d="M26 34 Q58 18 90 32 L90 36 Q58 24 26 40Z" fill="#3a2c1e" opacity=".8"/>`;
+ if(base==='Wild'&&ageOf(h)<2)extra+=[36,42,48].map(y=>`<path d="M30 ${y} Q58 ${y-6} 86 ${y}" stroke="#d8b98a" stroke-width="1.6" fill="none" opacity=".75"/>`).join('');
+ if(belt)extra+=`<rect x="62" y="20" width="16" height="50" fill="#efe5db"/>`;
+ const legC=belt?'#efe5db':col;
+ const rid=ridge(h)?`<path d="${Array.from({length:14},(_,i)=>`${i?'L':'M'}${30+i*4} ${i%2?27:21+ (i>9?3:0)}`).join(' ')}" stroke="#1e1815" stroke-width="2.2" fill="none" stroke-linejoin="round"/>`:'';
+ const t=h.sex==='M'?tusk(h):tusk(h)*.6;
+ const tk=t>.6?`<path d="M101 50 q${3+t} ${-1-t*.6} ${2+t*.9} ${-4-t*2.2}" stroke="#f3ead6" stroke-width="${1.6+t*.25}" fill="none" stroke-linecap="round"/>`:'';
+ return `<svg viewBox="0 0 120 78" role="img" aria-label="${esc(c)} ${h.sex==='M'?'boar':'sow'}"><g transform="translate(60 74) scale(${sc.toFixed(3)}) translate(-60 -74)">
+ <ellipse cx="58" cy="74" rx="40" ry="3" fill="#000" opacity=".25"/>
+ <clipPath id="c${u}"><ellipse cx="57" cy="44" rx="34" ry="19"/><path d="M82 30 L105 40 L106 52 L82 60Z"/></clipPath>
+ <g fill="${col}"><rect x="33" y="52" width="7" height="20" rx="2"/><rect x="44" y="54" width="7" height="18" rx="2"/></g>
+ <g fill="${legC}"><rect x="66" y="54" width="7" height="18" rx="2"/><rect x="75" y="52" width="7" height="20" rx="2"/></g>
+ <path d="M24 40 q-7 -2 -6 -8 q1 -4 4 -1" stroke="${col}" stroke-width="2" fill="none"/>
+ <g clip-path="url(#c${u})"><rect x="0" y="0" width="120" height="78" fill="${col}"/>${extra}</g>
+ <g fill="none" stroke="#efe6d8" stroke-opacity=".32" stroke-width="1.1"><ellipse cx="57" cy="44" rx="34" ry="19"/><path d="M84 31 L105 40 L106 52 L84 59"/><rect x="33" y="52" width="7" height="20" rx="2"/><rect x="75" y="52" width="7" height="20" rx="2"/></g>
+ ${rid}
+ <path d="M84 31 L90 18 L95 33Z" fill="${col}" stroke="#efe6d8" stroke-opacity=".32"/>
+ <ellipse cx="107" cy="46" rx="4" ry="6" fill="${skin}"/><circle cx="106.5" cy="44" r=".9" fill="#1a1412"/><circle cx="106.5" cy="48" r=".9" fill="#1a1412"/>
+ <circle cx="94" cy="39" r="1.6" fill="#140f0c"/>
+ ${tk}</g></svg>`;
+}
+function Fchip(F){const c=F<.0625?'F-ok':F<.125?'F-mid':'F-hi';return `<span class="F-chip ${c}">F ${F.toFixed(3)}</span>`}
+function pills(h){
+ let p='';if(ageOf(h)<2)p+='<span class="pill young">piglet</span> ';if(h.preg)p+='<span class="pill preg">bred</span> ';if(h.frail)p+='<span class="pill frail">frail</span> ';if(meets(h,LEGEND))p+='<span class="pill legend">legend</span> ';return p;
+}
+function card(h){
+ const a=ageOf(h);
+ return `<button class="card${S.sel===h.id?' sel':''}" data-act="sel" data-id="${h.id}" aria-pressed="${S.sel===h.id}">
+ <div class="row"><span class="tag">${pad(h.id)}</span><span class="sex ${h.sex}">${h.sex==='M'?'♂':'♀'}</span></div>
+ ${hogSVG(h)}
+ <div class="row"><span class="nm">${esc(h.name)}</span></div>
+ <div class="facts"><span>${coatOf(h)}</span><span>${Math.round(weight(h))} lb</span>${h.sex==='M'&&a>=2?`<span>${tusk(h).toFixed(1)} in</span>`:''}<span>T${temper(h)}</span><span>${a}s</span></div>
+ <div>${pills(h)}${h.F>0?Fchip(h.F):''}</div></button>`;
+}
+function slot(role){
+ const id=S.pick[role];const h=id&&H(id);
+ if(!h)return `<div class="slot"><div class="muted">${role==='dam'?'♀ Dam: open a sow and press “Use as dam”.':'♂ Sire: open a boar and press “Use as sire”.'}</div></div>`;
+ return `<div class="slot filled">${hogSVG(h)}<div style="min-width:0"><div class="eyebrow">${role}</div><div><span class="tag">${pad(h.id)}</span> ${esc(h.name)}</div><div class="muted mono" style="font-size:12px">${coatOf(h)}, ${Math.round(weight(h))} lb</div></div><button class="btn small" style="margin-left:auto" data-act="unpick" data-role="${role}" aria-label="Clear ${role}">×</button></div>`;
+}
+function bars(list){const cols=['var(--tag)','var(--info)','#e59ab7','var(--good)','var(--warn)','var(--muted)'];return `<div class="bar">${list.map(([k,p],i)=>`<i style="width:${(p*100).toFixed(1)}%;background:${cols[i%cols.length]}" title="${k} ${(p*100).toFixed(0)}%"></i>`).join('')}</div><div class="mono" style="font-size:12px">${list.map(([k,p],i)=>`<span style="color:${cols[i%cols.length]}">■</span> ${k} ${(p*100).toFixed(0)}%`).join('  ')}</div>`}
+function predictionHTML(){
+ const d=H(S.pick.dam),s=H(S.pick.sire);if(!d||!s)return '<div class="muted">Fill both slots to see what this mating should produce.</div>';
+ const F=kin(d.id,s.id);const err=canBreed();
+ const need=p=>`<span class="muted">Run the ${PANELS[p].name.toLowerCase()} on both parents.</span>`;
+ const both=p=>d.tested[p]&&s.tested[p];
+ let out=`<div class="row" style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between"><div>Offspring inbreeding ${Fchip(F)} <span class="muted">${F>=.25?'(full-sib or parent–offspring level)':F>=.125?'(half-sib level)':F>0?'(related)':'(unrelated by pedigree)'}</span></div><button class="btn primary" data-act="breed" ${err?'disabled':''} title="${err||''}">Breed this pair</button></div>`;
+ if(err)out+=`<div class="warn" style="font-size:12.5px">${esc(err)}</div>`;
+ out+='<div class="pred-grid">';
+ out+=`<div><div class="eyebrow">Coat</div>${both('coat')?bars(predictCoat(d,s)):need('coat')}</div>`;
+ if(both('coat')){const r=predictRidge(d,s);out+=`<div><div class="eyebrow">Ridgeback (X-linked)</div><div class="mono">Sons ${(r.sons*100).toFixed(0)}% · Daughters ${(r.daughters*100).toFixed(0)}%</div></div>`}
+ if(both('health')){const r=predictRYR(d,s);out+=`<div><div class="eyebrow">RYR1 stress gene</div>${bars([['N/N',r.NN],['N/n',r.Nn],['n/n',r.nn]])}</div><div><div class="eyebrow">PRRS tolerant</div><div class="mono">${(predictWUR(d,s)*100).toFixed(0)}% of piglets</div></div>`}else out+=`<div><div class="eyebrow">Health genes</div>${need('health')}</div>`;
+ out+=`<div><div class="eyebrow">Known recessive stillbirth risk</div>${both('load')?`<div class="mono ${predictLoad(d,s)>.1?'bad':''}">${(predictLoad(d,s)*100).toFixed(1)}% per piglet</div>`:need('load')}</div>`;
+ const qt=[['size','Mature weight (son)',v=>`${Math.round(v*(1-.2*F))} lb`],['tusk','Mature tusks (son)',v=>`${v.toFixed(1)} in`],['temper','Temper',v=>`${Math.round(v)}`],['litter','Daughters’ litter',v=>`${(v-6*F).toFixed(1)}`]];
+ out+=`<div style="grid-column:1/-1"><div class="eyebrow">Expected offspring means</div><div class="mono" style="display:flex;flex-wrap:wrap;gap:4px 16px;font-size:12.5px">${qt.map(([t,l,f])=>{const r=predQT(d,s,t);return `<span>${l}: ${r?`<b>${f(r.v)}</b> <span class="muted">(${r.how})</span>`:'<span class="muted">no data</span>'}</span>`}).join('')}</div></div>`;
+ return out+'</div>';
+}
+function herdView(){
+ let hs=herd();
+ const f=S.filter;if(f==='M'||f==='F')hs=hs.filter(h=>h.sex===f);if(f==='adult')hs=hs.filter(h=>ageOf(h)>=2);if(f==='young')hs=hs.filter(h=>ageOf(h)<2);
+ const so={id:(a,b)=>a.id-b.id,weight:(a,b)=>weight(b)-weight(a),tusk:(a,b)=>tusk(b)-tusk(a),temper:(a,b)=>temper(a)-temper(b),F:(a,b)=>a.F-b.F,price:(a,b)=>price(b)-price(a)}[S.sort];hs.sort(so);
+ return `<div class="panel chute">${slot('dam')}${slot('sire')}<div class="pred">${predictionHTML()}</div></div>
+ <div class="filters"><label class="muted" for="flt">Show</label><select id="flt" data-act="filter">${[['all','Whole herd'],['F','Sows'],['M','Boars'],['adult','Grown'],['young','Piglets']].map(([v,l])=>`<option value="${v}" ${S.filter===v?'selected':''}>${l}</option>`).join('')}</select>
+ <label class="muted" for="srt">Sort</label><select id="srt" data-act="sort">${[['id','Tag number'],['weight','Heaviest'],['tusk','Longest tusks'],['temper','Most docile'],['F','Least inbred'],['price','Sale value']].map(([v,l])=>`<option value="${v}" ${S.sort===v?'selected':''}>${l}</option>`).join('')}</select>
+ <span class="muted">${hs.length} shown</span></div>
+ ${hs.length?`<div class="herd">${hs.map(card).join('')}</div>`:'<div class="panel muted">No hogs here. Set a trap to catch wild stock.</div>'}`;
+}
+function detailView(){
+ const h=S.sel&&H(S.sel);
+ if(!h)return '<div class="panel muted">Select a hog to open its file.</div>';
+ const a=ageOf(h),inHerd=h.status==='herd';
+ const gtRow=(id)=>{const g=gt(h,id);return `<span class="loc">${id}</span><span class="al">${g[0]}/${g[1]??'Y'}</span><span class="muted">${LOC[id].name.replace(/^\S+ /,'')}</span>`};
+ const panel=(p,body)=>`<div class="sect"><div class="row" style="display:flex;justify-content:space-between;gap:8px;align-items:center"><h3>${PANELS[p].name}</h3>${h.tested[p]?'<span class="pill">on file</span>':inHerd?`<button class="btn small" data-act="test" data-p="${p}" data-id="${h.id}">Test $${PANELS[p].cost}</button>`:''}</div>${h.tested[p]?body():`<div class="muted" style="font-size:12.5px">${PANELS[p].desc}. Not tested.</div>`}</div>`;
+ const pedLink=id=>id?`<button data-act="sel" data-id="${id}">#${pad(id)} ${esc(H(id).name)}</button>`:'<span class="muted">wild-caught</span>';
+ const sire=h.sire&&H(h.sire),dam=h.dam&&H(h.dam);
+ const sp=S.confirm==='sell'+h.id;
+ return `<div class="panel" style="display:flex;flex-direction:column;gap:10px">
+ <div class="row" style="display:flex;gap:8px;align-items:center;flex-wrap:wrap"><span class="tag">${pad(h.id)}</span><h2 style="margin-right:auto">${esc(h.name)}</h2><span class="sex ${h.sex}">${h.sex==='M'?'♂ boar':'♀ sow'}</span></div>
+ ${h.status!=='herd'?`<div class="banner bad">This hog is ${h.status==='sold'?'sold':h.status==='escaped'?'gone wild again':'dead'}. Its record stays in the herd book for pedigree math.</div>`:''}
+ <div style="max-width:300px">${hogSVG(h)}</div>
+ <div>${pills(h)}${Fchip(h.F)}</div>
+ <dl class="dl">
+  <dt>Age</dt><dd>${a} season${a===1?'':'s'}${a<2?' (not breedable yet)':''}</dd>
+  <dt>Coat</dt><dd>${coatOf(h)}${ridge(h)?', ridgeback':''}</dd>
+  <dt>Weight</dt><dd>${Math.round(weight(h))} lb${a<3?` <span class="muted">(growing)</span>`:''}</dd>
+  <dt>Lean</dt><dd>${lean(h).toFixed(1)}%</dd>
+  <dt>Tusks</dt><dd>${tusk(h).toFixed(1)} in${h.sex==='F'?' <span class="muted">(sows barely show it)</span>':a<8?' <span class="muted">(still growing)</span>':''}</dd>
+  <dt>Temper</dt><dd>${temper(h)} <span class="muted">${temper(h)<=35?'docile':temper(h)>=60?'rank':'average'}</span></dd>
+  ${h.sex==='F'?`<dt>Litters</dt><dd>${h.litters.length?h.litters.map(l=>`${l.alive}/${l.born}`).join(', ')+' <span class="muted">alive/born</span>':'none yet'}</dd>`:''}
+  ${h.preg?`<dt>Bred to</dt><dd>#${pad(h.preg.sire)} ${esc(H(h.preg.sire).name)}, due ${seasonName(h.preg.due)}</dd>`:''}
+  <dt>Sale value</dt><dd>$${price(h)}${coatOf(h)===S.fashion?' <span class="good">(in fashion)</span>':''}</dd>
+ </dl>
+ ${inHerd?`<div class="btnrow">${h.sex==='F'?`<button class="btn" data-act="pick" data-role="dam" data-id="${h.id}">Use as dam</button>`:`<button class="btn" data-act="pick" data-role="sire" data-id="${h.id}">Use as sire</button>`}
+ ${sp?`<button class="btn danger" data-act="sell" data-id="${h.id}">Confirm sale $${price(h)}</button><button class="btn" data-act="cancel">Keep</button>`:`<button class="btn" data-act="asksell" data-id="${h.id}">Sell at barn</button>`}</div>`:''}
+ <div class="sect"><h3>Pedigree</h3><div class="ped"><div><div class="eyebrow">Sire</div>${pedLink(h.sire)}</div><div><div class="eyebrow">Dam</div>${pedLink(h.dam)}</div>
+ ${sire||dam?`<div><div class="eyebrow">Sire’s parents</div>${sire?pedLink(sire.sire)+'<br>'+pedLink(sire.dam):''}</div><div><div class="eyebrow">Dam’s parents</div>${dam?pedLink(dam.sire)+'<br>'+pedLink(dam.dam):''}</div>`:''}</div>
+ ${h.mut&&h.mut.length?`<div class="good" style="font-size:12.5px">Carries a new mutation: ${h.mut.join(', ')}</div>`:''}</div>
+ ${panel('coat',()=>`<div class="gt">${gtRow('KIT')}${gtRow('MC1R')}${gtRow('RDG')}</div><div style="font-size:12.5px" class="${trueBreeding(h)?'good':'muted'}">${trueBreeding(h)?'True-breeding for coat: homozygous at KIT and MC1R.':'Not true-breeding: will throw other coats.'}</div>`)}
+ ${panel('health',()=>`<div class="gt">${gtRow('RYR1')}${gtRow('WUR')}</div><div style="font-size:12.5px">${['<span class="good">Stress-free N/N.</span>','Carrier N/n: slightly leaner, safe.','<span class="bad">n/n: very lean, but can die of stress in transport.</span>'][nCount(h)]} ${wurTol(h)?'<span class="good">PRRS tolerant.</span>':'<span class="warn">PRRS susceptible.</span>'}</div>`)}
+ ${panel('ebv',()=>`<div class="gt">${['size','tusk','temper','litter'].map(t=>{const v=ebv(h,t);return `<span class="loc">${t}</span><span class="al ${(t==='temper'?-v:v)>0?'good':'muted'}">${v>=0?'+':'−'}${Math.abs(v).toFixed(t==='size'||t==='temper'?0:2)}</span><span class="muted">${TRAIT[t].unit||'pts'} vs wild mean${t==='tusk'&&h.sex==='F'?' (in sons)':''}</span>`}).join('')}</div><div class="muted" style="font-size:12px">A parent passes on half its breeding value on average.</div>`)}
+ ${panel('load',()=>{const c=carriers(h);return c.length?`<div style="font-size:12.5px">Carries recessive lethal alleles at <b class="mono warn">${c.join(', ')}</b>. Mating to another carrier at the same locus kills ¾ of affected piglets.</div>`:'<div class="good" style="font-size:12.5px">Clean at every screened locus.</div>'})}
+ </div>`;
+}
+function legendChecklist(){
+ const hs=herd();let best=null,bs=-1;
+ hs.forEach(h=>{const n=specChecks(h,LEGEND).filter(x=>x[1]).length;if(n>bs){bs=n;best=h}});
+ if(!best)return '<div class="muted">No hogs in the herd.</div>';
+ return `<div style="font-size:12.5px" class="muted">Closest so far: <button class="btn small" data-act="sel" data-id="${best.id}">#${pad(best.id)} ${esc(best.name)}</button></div><ul class="check">${specChecks(best,LEGEND).map(([l,ok])=>`<li class="${ok?'ok':''}">${l}</li>`).join('')}</ul>`;
+}
+function marketView(){
+ return `<div style="display:flex;flex-direction:column;gap:14px">
+ <div class="panel legend-box" style="display:flex;flex-direction:column;gap:8px"><div class="eyebrow">Long game</div><h2>The Hollow Creek Legend</h2>
+ <p style="margin:0;max-width:65ch">Old-timers swear a red belted ridgeback boar once ran these bottoms: tusks near five inches, 300 pounds or better, gentle as a dog. Breed one and certify it stress-free. Every trait sits on a different locus, and some are linked to things you don’t want.</p>
+ ${S.legendAt!=null?`<div class="banner">Legend bred in ${S.legendAt} seasons. Keep ranching, or start over and beat your time.</div>`:''}${legendChecklist()}</div>
+ <div><h2 style="margin-bottom:8px">Open contracts</h2><div class="contracts">${S.contracts.map(c=>{const q=herd().filter(h=>meets(h,c.spec));const left=c.expires-S.season;return `<div class="panel contract"><div class="eyebrow">${esc(c.who)}</div><div class="reward">$${c.reward}</div><ul>${contractReqs(c.spec)}</ul><div class="muted" style="font-size:12px">${left} season${left===1?'':'s'} left</div>${q.length?`<div class="btnrow">${q.map(h=>`<button class="btn small primary" data-act="deliver" data-c="${c.id}" data-id="${h.id}">Deliver #${pad(h.id)} ${esc(h.name)}</button>`).join('')}</div>`:'<div class="muted" style="font-size:12.5px">No hog qualifies yet.</div>'}</div>`}).join('')}</div></div>
+ <div class="panel"><h3>Sale barn</h3><p class="muted" style="margin:4px 0 0">Live weight at $0.70/lb, adjusted for lean. Trophy boars over 3.5 in of tusk earn a premium that grows with the square of the extra length. ${S.fashion} coats sell for 40% more this year. Rank hogs (temper over 80) sell at a discount.</p></div></div>`;
+}
+function contractReqs(s){
+ const r=[];if(s.sex)r.push(s.sex==='M'?'Boar':'Sow');if(s.coat)r.push(`${s.coat} coat`);if(s.trueBreeding)r.push('Coat-tested true-breeding');if(s.tuskMin)r.push(`Tusks ≥ ${s.tuskMin.toFixed(1)} in`);if(s.weightMin)r.push(`Weight ≥ ${s.weightMin} lb`);if(s.leanMin)r.push(`Lean ≥ ${s.leanMin}%`);if(s.temperMin!=null)r.push(`Temper ≥ ${s.temperMin}`);if(s.temperMax!=null)r.push(`Temper ≤ ${s.temperMax}`);if(s.certNN)r.push('Health-tested RYR1 N/N');if(s.certWUR)r.push('Health-tested PRRS tolerant');if(s.Fmax!=null)r.push(`Pedigree F ≤ ${s.Fmax}`);if(s.litterMin)r.push(`Has farrowed ≥ ${s.litterMin} live`);
+ return r.map(x=>`<li>${x}</li>`).join('');
+}
+function logView(){return `<div class="panel log">${S.log.map(l=>`<div class="${l.cls||''}"><span class="s">${seasonName(l.s)}</span> ${esc(l.msg)}</div>`).join('')}</div>`}
+function chromMap(){
+ const W=640,rowH=44,top=10,x0=40,scale=(W-x0-20)/200;
+ const col={major:'var(--tag)',qt:'var(--info)',load:'var(--bad)'};
+ let s=`<svg viewBox="0 0 ${W} ${top+CHROMS.length*rowH+10}" width="${W}" style="max-width:none;display:block" role="img" aria-label="Chromosome map">`;
+ CHROMS.forEach((c,i)=>{const y=top+i*rowH+16;s+=`<text x="0" y="${y+4}" fill="var(--muted)" font-family="IBM Plex Mono, monospace" font-size="12">SSC${c.id}</text><rect x="${x0}" y="${y-5}" width="${c.len*scale}" height="10" rx="5" fill="var(--loam-3)" stroke="var(--line)"/>`;
+  CHR_LOCI[c.id].forEach((L,k)=>{const x=x0+L.pos*scale;s+=`<line x1="${x}" x2="${x}" y1="${y-7}" y2="${y+7}" stroke="${col[L.type]}" stroke-width="2"/><text x="${x}" y="${k%2?y+19:y-10}" text-anchor="middle" fill="${col[L.type]}" font-family="IBM Plex Mono, monospace" font-size="10">${L.type==='load'?'d':L.id}</text>`});
+ });
+ return s+`<text x="${x0}" y="${top+CHROMS.length*rowH+6}" fill="var(--muted)" font-size="10" font-family="IBM Plex Mono, monospace">0 cM</text><text x="${x0+200*scale}" y="${top+CHROMS.length*rowH+6}" text-anchor="end" fill="var(--muted)" font-size="10" font-family="IBM Plex Mono, monospace">200 cM</text></svg>`;
+}
+function guideView(){
+ const pct=v=>(v*100).toFixed(0)+'%';
+ return `<div class="guide">
+ <h2>Field guide to hawg genetics</h2>
+ <p>Every hog carries two copies of six chromosomes: one from its dam, one from its sire. You only see phenotype. Genotypes stay hidden until you pay the lab.</p>
+ <div class="panel mapwrap">${chromMap()}<div class="muted" style="font-size:12px;margin-top:4px"><span style="color:var(--tag)">■</span> major genes  <span style="color:var(--info)">■</span> trait loci (QTL)  <span style="color:var(--bad)">■</span> hidden recessive lethals (d)</div></div>
+ <h3>Linkage and recombination</h3>
+ <p>Loci on the same chromosome travel together. The chance a crossover splits two loci <span class="math">d</span> centimorgans apart follows Haldane’s map function:</p>
+ <p class="math">r = ½(1 − e<sup>−2d</sup>), &nbsp; d in Morgans</p>
+ <p>KIT and the size locus S1 sit 13 cM apart (<span class="math">r ≈ 0.11</span>). Wild belted haplotypes usually carry a small-size allele there, so selecting for the belt drags size down until a crossover breaks them apart. The ridgeback allele on the X often rides with the DX lethal.</p>
+ <h3>Dominance and epistasis</h3>
+ <p>KIT: <span class="mono">I &gt; Be &gt; i</span>. Dominant white (I) hides whatever MC1R says. MC1R: <span class="mono">ED &gt; EP &gt; E &gt; e</span>, giving black, spotted, wild, and red. Red needs <span class="mono">e/e</span>, so two black parents can throw red piglets.</p>
+ <h3>Sex linkage and sex limitation</h3>
+ <p>Ridgeback (RDG) is on the X. Boars (XY) show it with one copy, sows need two. Sons get their only X from the dam. Tusks are sex-limited: sows carry tusk genes but show about 30% of them. Litter size only shows in sows.</p>
+ <h3>Quantitative traits</h3>
+ <p>Size, tusks, temper and litter size are each set by several additive loci plus environment. Heritability in this model: size ${pct(H2.size)}, tusks ${pct(H2.tusk)}, temper ${pct(H2.temper)}, litter ${pct(H2.litter)}. Without genomic tests, the planner uses the breeder’s equation:</p>
+ <p class="math">E[offspring] = μ + h<sup>2</sup>(P̅<sub class="up">mid</sub> − μ)</p>
+ <p>For sex-limited traits only the expressing parent counts, with weight <span class="math">h<sup>2</sup>/2</span>. A genomic EBV reads the alleles directly, which is why it is the best way to pick a sow for tusk genes.</p>
+ <h3>Inbreeding</h3>
+ <p>The planner computes the coefficient of inbreeding from the herd book. A piglet’s <span class="math">F</span> equals the coancestry of its parents:</p>
+ <p class="math">F<sub class="up">X</sub> = ∑ (½)<sup>n<sub>1</sub>+n<sub>2</sub>+1</sup>(1 + F<sub class="up">A</sub>)</p>
+ <p>summed over every common ancestor <span class="math">A</span>. Full siblings give <span class="math">F = 0.25</span>, half siblings 0.125. Inbreeding exposes the hidden recessive lethals: two carriers at the same locus produce <span class="math">d/d</span> piglets ¼ of the time, and 75% of those are stillborn. Survivors are frail. On top of that, each unit of <span class="math">F</span> costs about 6 piglets per litter and 20% of body weight.</p>
+ <h3>Mutation</h3>
+ <p>Each locus mutates at roughly 0.2–0.8% per transmission. That is thousands of times faster than real pigs so you can see it happen in one game. Most new trait-locus mutations nudge an allele by one step.</p>
+ <h3>Real versus invented</h3>
+ <div class="tablewrap"><table><tr><th>Locus</th><th>Status</th></tr>
+ <tr><td class="mono">KIT, MC1R</td><td>Real pig coat genes. Dominant white, belt and the MC1R series are simplified.</td></tr>
+ <tr><td class="mono">RYR1</td><td>Real halothane gene. n/n pigs are leaner and prone to porcine stress syndrome. Both genes really sit on chromosome 6, though at different spacing.</td></tr>
+ <tr><td class="mono">WUR</td><td>Real marker in GBP5 linked to PRRS virus response, with a favorable dominant allele. Its effect is exaggerated here.</td></tr>
+ <tr><td class="mono">RDG</td><td>Invented. The X-linked ridgeback mane is a game trait.</td></tr>
+ <tr><td class="mono">QTL, d loci</td><td>Stand-ins. Real size and litter traits involve hundreds of loci with small effects.</td></tr></table></div>
+ <h3>Controls</h3>
+ <p>Trap wild stock for new alleles and unrelated blood. Open a hog, test it, and put it in the breeding chute. Advance the season to farrow litters, pay feed and age the herd. Gestation takes one season (pigs carry for 3 months, 3 weeks and 3 days). Hogs breed from 2 seasons old, and boar tusks keep growing until 8 seasons.</p>
+ <div class="btnrow">${S.confirm==='new'?'<button class="btn danger" data-act="newgame">Erase ranch and start over</button><button class="btn" data-act="cancel">Keep playing</button>':'<button class="btn" data-act="asknew">New game</button>'}</div>
+ </div>`;
+}
+function render(){
+ svgSeq=0;
+ const hs=herd();
+ const app=document.getElementById('app');
+ app.innerHTML=`<header class="top"><div class="brand"><div class="eyebrow">Hollow Creek Hog Works</div><h1>Bloodline <span>Hawgs</span></h1></div>
+ <div class="stats"><div class="stat"><span class="eyebrow">Season</span><b>${seasonName(S.season)}</b></div><div class="stat"><span class="eyebrow">Cash</span><b class="${S.cash<0?'neg':''}">${S.cash<0?'−':''}$${Math.abs(Math.round(S.cash))}</b></div><div class="stat"><span class="eyebrow">Pens</span><b class="${hs.length>S.cap?'neg':''}">${hs.length}/${S.cap}</b></div><div class="stat"><span class="eyebrow">Fashion</span><b style="font-size:14px;font-family:var(--body)">${S.fashion}</b></div></div>
+ <div class="actions"><button class="btn" data-act="trap">Set trap $35</button><button class="btn" data-act="expand">Add pen $${expandCost()}</button><button class="btn primary" data-act="advance" ${S.over?'disabled':''}>Next season ▸</button></div></header>
+ ${S.over?`<div class="banner bad"><b>Foreclosed.</b> Hollow Creek lasted ${S.season} seasons. <button class="btn small" data-act="newgame">Start a new ranch</button></div>`:''}
+ <div class="layout"><main><nav class="tabs" role="tablist">${[['herd','Herd & breeding'],['market','Market'],['log','Ledger'],['guide','Field guide']].map(([k,l])=>`<button class="tab" role="tab" aria-selected="${S.tab===k}" data-act="tab" data-t="${k}">${l}</button>`).join('')}</nav>
+ ${{herd:herdView,market:marketView,log:logView,guide:guideView}[S.tab]()}</main>
+ <aside class="detail" id="detail">${detailView()}</aside></div>`;
+}
+let toastT;function toast(m){const t=document.getElementById('toast');t.textContent=m;t.hidden=false;clearTimeout(toastT);toastT=setTimeout(()=>t.hidden=true,2600)}
+
+/* ================= EVENTS ================= */
+document.addEventListener('click',e=>{
+ const b=e.target.closest('[data-act]');if(!b||b.tagName==='SELECT')return;
+ const a=b.dataset.act,id=b.dataset.id?+b.dataset.id:null;
+ if(a!=='asksell'&&a!=='asknew')S.confirm=null;
+ switch(a){
+  case 'sel':S.sel=id;if(window.innerWidth<=960)requestAnimationFrame(()=>document.getElementById('detail').scrollIntoView({behavior:'smooth',block:'start'}));break;
+  case 'pick':S.pick[b.dataset.role]=id;if(S.tab!=='herd')S.tab='herd';break;
+  case 'unpick':S.pick[b.dataset.role]=null;break;
+  case 'breed':breed();break;
+  case 'test':test(id,b.dataset.p);break;
+  case 'asksell':S.confirm='sell'+id;break;
+  case 'sell':sell(id);break;
+  case 'cancel':break;
+  case 'deliver':deliver(+b.dataset.c,id);break;
+  case 'trap':trap();break;
+  case 'expand':expand();break;
+  case 'advance':advance();break;
+  case 'tab':S.tab=b.dataset.t;break;
+  case 'asknew':S.confirm='new';break;
+  case 'newgame':newGame();break;
+ }
+ save();render();
+});
+document.addEventListener('change',e=>{const a=e.target.dataset.act;if(a==='filter')S.filter=e.target.value;if(a==='sort')S.sort=e.target.value;save();render()});
+
+const KEY='bloodline-hawgs-v1';
+function save(){try{localStorage.setItem(KEY,JSON.stringify(S))}catch(_){}}
+function load(){try{const s=JSON.parse(localStorage.getItem(KEY));if(s&&s.hogs&&s.season!=null){S=s;return true}}catch(_){}return false}
+function start(data){
+ if(data&&data.S&&data.S.hogs)S=data.S;else if(!load())newGame();
+ kinMemo=new Map();render();
+}
+window.claude?.hot?.snapshot?.(()=>({S}));
+window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??{});
+</script>
