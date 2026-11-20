@@ -174,7 +174,12 @@ th{color:var(--muted);font-weight:600}
 .pig .b{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--tag)}
 @keyframes flip{from{opacity:0;transform:perspective(500px) rotateY(85deg) scale(.9)}to{opacity:1;transform:none}}
 .evts{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
-@media (prefers-reduced-motion:reduce){.pig{animation:none}.sprite.scuffle .inner{animation:none}.dust{display:none}}
+:root.feral{--loam:#1f0d0b;--loam-2:#2c1210;--loam-3:#3d1a15;--line:#6b2a20;--tag:#ff5a2e;--tag-ink:#1a0603;--muted:#c99a8c;--dirt-1:#4d2418;--dirt-2:#3a1a12;--mud:#2a0f0a}
+.feral-badge{display:inline-block;background:var(--bad);color:#1a0603;font-family:var(--display);font-size:13px;padding:2px 8px;border-radius:4px;letter-spacing:.08em;transform:rotate(-3deg)}
+:root.feral h1{animation:rage 2.4s infinite}
+:root.feral .card:hover svg{animation:shake .4s}
+@keyframes rage{0%,92%,100%{transform:none}94%{transform:translate(-2px,1px) rotate(-.6deg)}96%{transform:translate(2px,-1px) rotate(.6deg)}98%{transform:translate(-1px,0)}}
+@media (prefers-reduced-motion:reduce){:root.feral h1,:root.feral .card:hover svg{animation:none}.pig{animation:none}.sprite.scuffle .inner{animation:none}.dust{display:none}}
 @media (max-width:540px){.chute{grid-template-columns:1fr}.herd{grid-template-columns:repeat(2,minmax(0,1fr))}.yard{height:180px}}
 </style>
 
@@ -660,7 +665,7 @@ function advance(){
 function checkChallenge(){
  if(!S.challenge||S.chResult)return;
  const ch=CHALLENGES.find(c=>c.id===S.challenge);
- if(ch.goal()){S.chResult={win:true,s:S.season};log(`Challenge complete: ${ch.name} in ${S.season} seasons.`,'good');try{const b=JSON.parse(localStorage.getItem(BESTKEY)||'{}');if(!b[ch.id]||S.season<b[ch.id]){b[ch.id]=S.season;localStorage.setItem(BESTKEY,JSON.stringify(b))}}catch(_){}}
+ if(ch.goal()){S.chResult={win:true,s:S.season};log(`Challenge complete: ${ch.name} in ${S.season} seasons.${S.feralUsed?' Feral mode was used, so no best time is saved.':''}`,'good');if(!S.feralUsed)try{const b=JSON.parse(localStorage.getItem(BESTKEY)||'{}');if(!b[ch.id]||S.season<b[ch.id]){b[ch.id]=S.season;localStorage.setItem(BESTKEY,JSON.stringify(b))}}catch(_){}}
  else if(S.season>=ch.limit){S.chResult={win:false,s:S.season};log(`Challenge failed: ${ch.name}. Time ran out.`,'bad')}
 }
 
@@ -740,7 +745,7 @@ function hogSVG(h){
  const g=glow(h);
  const halo=g?`<radialGradient id="g${u}"><stop offset="0" stop-color="#9dffb6" stop-opacity=".55"/><stop offset="1" stop-color="#9dffb6" stop-opacity="0"/></radialGradient><ellipse cx="62" cy="44" rx="56" ry="34" fill="url(#g${u})"/>`:'';
  const rid=ridge(h)?`<path d="${Array.from({length:14},(_,i)=>`${i?'L':'M'}${30+i*4} ${i%2?27:21+(i>9?3:0)}`).join(' ')}" stroke="${g?'#9dffb6':'#1e1815'}" stroke-width="2.2" fill="none" stroke-linejoin="round"/>`:'';
- const t=h.sex==='M'?tusk(h):tusk(h)*.6;
+ const t=Math.min(10,(h.sex==='M'?tusk(h):tusk(h)*.6)*(S.feral?2:1));
  const tk=t>.6?`<path d="M101 50 q${3+t} ${-1-t*.6} ${2+t*.9} ${-4-t*2.2}" stroke="#f3ead6" stroke-width="${1.6+t*.25}" fill="none" stroke-linecap="round"/>`:'';
  return `<svg viewBox="0 0 120 78" role="img" aria-label="${esc(c)} ${h.sex==='M'?'boar':'sow'}">${halo}<g transform="translate(60 74) scale(${sc.toFixed(3)}) translate(-60 -74)">
  <ellipse cx="58" cy="74" rx="40" ry="3" fill="#000" opacity=".25"/>
@@ -753,7 +758,7 @@ function hogSVG(h){
  ${rid}
  <path d="M84 31 L90 18 L95 33Z" fill="${col}" stroke="#efe6d8" stroke-opacity=".32"/>
  <ellipse cx="107" cy="46" rx="4" ry="6" fill="${skin}"/><circle cx="106.5" cy="44" r=".9" fill="#1a1412"/><circle cx="106.5" cy="48" r=".9" fill="#1a1412"/>
- <circle cx="94" cy="39" r="1.6" fill="${g?'#9dffb6':'#140f0c'}"/>
+ <circle cx="94" cy="39" r="${S.feral?2.2:1.6}" fill="${S.feral?'#ff2a10':g?'#9dffb6':'#140f0c'}"/>
  ${tk}</g></svg>`;
 }
 function Fchip(F){return `<span class="chip ${F<.0625?'c-ok':F<.125?'c-mid':'c-hi'}">F ${F.toFixed(3)}</span>`}
@@ -987,7 +992,7 @@ function syncYard(){
  for(const [id,sp] of yard.sprites)if(!ids.has(id)){sp.el.remove();yard.sprites.delete(id)}
  hs.forEach(h=>{
   let sp=yard.sprites.get(h.id);
-  const stamp=S.season+'|'+coatOf(h);
+  const stamp=S.season+'|'+coatOf(h)+'|'+!!S.feral;
   if(!sp){const el=document.createElement('button');el.className='sprite';el.dataset.act='sel';el.dataset.id=h.id;el.innerHTML='<span class="nm"></span><span class="inner"></span>';yard.el.appendChild(el);
    sp={el,x:Math.random()*(W-80),y:40+Math.random()*(Hh-110),tx:0,ty:0,wait:Math.random()*2,face:Math.random()<.5,charge:null,stamp:''};sp.tx=sp.x;sp.ty=sp.y;yard.sprites.set(h.id,sp)}
   if(sp.stamp!==stamp){sp.stamp=stamp;const w=Math.round(78+22*clamp(weight(h)/400,0,1));sp.w=w;sp.el.style.width=w+'px';sp.el.querySelector('.inner').innerHTML=hogSVG(h)}
@@ -1006,14 +1011,14 @@ function tick(t){
   const h=H(id);if(!h)continue;
   if(sp.wait>0){sp.wait-=dt;continue}
   const dx=sp.tx-sp.x,dy=sp.ty-sp.y,dist=Math.hypot(dx,dy);
-  const speed=(sp.charge?150:ageOf(h)<2?55:32);
+  const speed=(sp.charge?150:ageOf(h)<2?55:32)*(S.feral?3:1);
   if(dist<3){
-   if(sp.charge){const o=yard.sprites.get(sp.charge);sp.charge=null;if(o){[sp,o].forEach(z=>{z.el.classList.add('scuffle');setTimeout(()=>z.el.classList.remove('scuffle'),460)});const p=document.createElement('div');p.className='dust';p.style.left=(sp.x+sp.w*.6)+'px';p.style.top=(sp.y+sp.w*.4)+'px';p.style.zIndex=999;yard.el.appendChild(p);setTimeout(()=>p.remove(),650);if(S.tab==='herd'&&t-yard.grunt>5000){yard.grunt=t;sfx('grunt')}}}
-   sp.wait=1+Math.random()*4;
+   if(sp.charge){const o=yard.sprites.get(sp.charge);sp.charge=null;if(o){[sp,o].forEach(z=>{z.el.classList.add('scuffle');setTimeout(()=>z.el.classList.remove('scuffle'),460)});const p=document.createElement('div');p.className='dust';p.style.left=(sp.x+sp.w*.6)+'px';p.style.top=(sp.y+sp.w*.4)+'px';p.style.zIndex=999;yard.el.appendChild(p);setTimeout(()=>p.remove(),650);if(S.tab==='herd'&&t-yard.grunt>(S.feral?1200:5000)){yard.grunt=t;sfx('grunt')}}}
+   sp.wait=S.feral?Math.random()*.4:1+Math.random()*4;
    const dam=h.dam&&yard.sprites.get(h.dam);
    if(ageOf(h)<2&&dam&&Math.random()<.7){sp.tx=dam.x+(Math.random()*60-30);sp.ty=dam.y+15+Math.random()*20}
    else if(h.quirk==='wallower'&&Math.random()<.6){sp.tx=W*.18-sp.w/2+Math.random()*40-20;sp.ty=Hh*.78-sp.w*.55}
-   else if((temper(h)>78||h.quirk==='bully')&&grown(h)&&Math.random()<.25&&yard.sprites.size>1){const others=[...yard.sprites.keys()].filter(k=>k!==id);const o=yard.sprites.get(others[Math.floor(Math.random()*others.length)]);sp.charge=others.find(k=>yard.sprites.get(k)===o);sp.tx=o.x-sp.w*.5;sp.ty=o.y;sp.wait=0}
+   else if((S.feral||temper(h)>78||h.quirk==='bully')&&(S.feral||grown(h))&&Math.random()<(S.feral?.6:.25)&&yard.sprites.size>1){const others=[...yard.sprites.keys()].filter(k=>k!==id);const o=yard.sprites.get(others[Math.floor(Math.random()*others.length)]);sp.charge=others.find(k=>yard.sprites.get(k)===o);sp.tx=o.x-sp.w*.5;sp.ty=o.y;sp.wait=0}
    else{sp.tx=Math.random()*(W-sp.w);sp.ty=30+Math.random()*(Hh-sp.w*.65-36)}
    sp.tx=clamp(sp.tx,0,W-sp.w);sp.ty=clamp(sp.ty,30,Hh-sp.w*.65);
    continue;
@@ -1024,11 +1029,12 @@ function tick(t){
 
 /* ================= MAIN RENDER ================= */
 function render(){
+ document.documentElement.classList.toggle('feral',!!S.feral);
  const hs=herd();const app=document.getElementById('app');
  const regions=['bottom','piney','hill'];const R=POPS[S.region];const nr=nextRep(S.rep);
  const ch=S.challenge&&CHALLENGES.find(c=>c.id===S.challenge);
  const fairOpen=!S.fair.judged&&S.fair.entries.some(e=>e==null)&&herd().some(grown);
- app.innerHTML=`<header class="top"><div class="brand"><div class="eyebrow">Hollow Creek Hog Works · ${repTitle(S.rep)}</div><h1>Bloodline <span>Hawgs</span></h1></div>
+ app.innerHTML=`<header class="top"><div class="brand"><div class="eyebrow">Hollow Creek Hog Works · ${repTitle(S.rep)}</div><h1>Bloodline <span>Hawgs</span></h1>${S.feral?'<div><span class="feral-badge">FERAL MODE</span></div>':''}</div>
  <div class="stats">
   <div class="stat"><span class="eyebrow">Season</span><b>${seasonName(S.season)}</b></div>
   <div class="stat"><span class="eyebrow">Cash</span><b class="${S.cash<0?'neg':''}">${S.cash<0?'−':''}$${Math.abs(Math.round(S.cash))}</b></div>
@@ -1044,7 +1050,7 @@ function render(){
   <button class="btn" data-act="sound" aria-pressed="${SND.on}" title="Sound">${SND.on?'Sound on':'Sound off'}</button>
   <button class="btn primary" data-act="advance" ${S.over?'disabled':''}>Next season ▸</button></div></header>
  ${S.over?`<div class="banner bad"><b>Foreclosed.</b> Hollow Creek lasted ${S.season} seasons. <button class="btn small" data-act="newgame" data-ch="long">Start a new ranch</button></div>`:''}
- ${ch?`<div class="banner ${S.chResult&&!S.chResult.win?'bad':'info'}"><b>Challenge: ${ch.name}.</b> ${ch.desc} ${S.chResult?(S.chResult.win?`Done in ${S.chResult.s} seasons.`:'Failed.'):`${ch.limit-S.season} seasons left.`}</div>`:''}
+ ${ch?`<div class="banner ${S.chResult&&!S.chResult.win?'bad':'info'}"><b>Challenge: ${ch.name}.</b> ${ch.desc} ${S.chResult?(S.chResult.win?`Done in ${S.chResult.s} seasons.`:'Failed.'):`${ch.limit-S.season} seasons left.`}${S.feralUsed?' Feral mode was used, so this run won’t set a best time.':''}</div>`:''}
  <div class="layout"><main><nav class="tabs" role="tablist">${[['herd','Herd & breeding'],['fair','Fair'],['market','Market'],['dex','Hogdex'],['log','Ledger'],['guide','Guide & new game']].map(([k,l])=>`<button class="tab" role="tab" aria-selected="${S.tab===k}" data-act="tab" data-t="${k}">${l}${k==='fair'&&fairOpen?'<span class="dot" aria-label="entries open"></span>':''}</button>`).join('')}</nav>
  ${{herd:herdView,fair:fairView,market:marketView,dex:dexView,log:logView,guide:guideView}[S.tab]()}</main>
  <aside class="detail" id="detail">${detailView()}</aside></div>`;
@@ -1086,6 +1092,16 @@ document.addEventListener('change',e=>{
  if(a==='enter'){const i=+t.dataset.i;const v=t.value?+t.value:null;if(v!=null)S.fair.entries=S.fair.entries.map((x,j)=>j!==i&&x===v?null:x);S.fair.entries[i]=v}
  save();render();
 });
+let keyBuf='';
+document.addEventListener('keydown',e=>{
+ if(e.ctrlKey||e.metaKey||e.altKey||e.key.length!==1)return;const tg=e.target.tagName;if(tg==='INPUT'||tg==='TEXTAREA')return;
+ keyBuf=(keyBuf+e.key.toLowerCase()).slice(-4);
+ if(keyBuf==='hawg'){keyBuf='';S.feral=!S.feral;if(S.feral&&S.challenge&&!S.chResult)S.feralUsed=true;
+  log(S.feral?'Something got into the hawgs. Feral mode is on.':'The hawgs settled down. Feral mode is off.',S.feral?'bad':null);
+  toast(S.feral?'FERAL MODE. Type hawg again to calm them down.':'Feral mode off.');
+  if(S.feral){sfx('grunt');sfx('grunt',.25);sfx('squeal',.5)}save();render()}
+});
+setInterval(()=>{if(S&&S.feral&&SND.ctx&&!document.hidden&&Math.random()<.6)sfx('grunt')},1800);
 document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!document.getElementById('overlay').hidden){closeReport();render()}});
 window.addEventListener('resize',()=>{if(S&&S.tab==='herd')syncYard()});
 
