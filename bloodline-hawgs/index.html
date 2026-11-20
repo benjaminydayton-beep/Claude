@@ -173,6 +173,9 @@ th{color:var(--muted);font-weight:600}
 .pig svg{width:100%;height:auto}
 .pig .b{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.05em;color:var(--tag)}
 @keyframes flip{from{opacity:0;transform:perspective(500px) rotateY(85deg) scale(.9)}to{opacity:1;transform:none}}
+.gazette{border-bottom:3px double var(--line);padding-bottom:10px;text-align:center}
+.gazette .mast{font-family:var(--display);font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.gazette .hl{font-family:var(--display);font-size:clamp(20px,3.4vw,30px);line-height:1.1;text-wrap:balance;margin-top:4px;text-transform:uppercase}
 .evts{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:3px}
 :root.feral{--loam:#1f0d0b;--loam-2:#2c1210;--loam-3:#3d1a15;--line:#6b2a20;--tag:#ff5a2e;--tag-ink:#1a0603;--muted:#c99a8c;--dirt-1:#4d2418;--dirt-2:#3a1a12;--mud:#2a0f0a}
 .feral-badge{display:inline-block;background:var(--bad);color:#1a0603;font-family:var(--display);font-size:13px;padding:2px 8px;border-radius:4px;letter-spacing:.08em;transform:rotate(-3deg)}
@@ -500,7 +503,7 @@ function className(c){return c.k==='coat'?`Best Coat: ${c.coat}`:FAIR[c.k].name}
 function newFair(){
  const y=yearOf();const keys=Object.keys(FAIR);const a=pick(keys);let b=pick(keys);while(b===a)b=pick(keys);
  const classes=[a,b].map(k=>{const c={k};if(k==='coat')c.coat=pick(['Red','Black Belted','Spotted','Red Belted','Wild Belted','Slate','Fawn','White']);return c});
- classes.forEach(c=>{const F=FAIR[c.k];c.rivals=RIVALS.map(r=>{const sc=Math.max(F.par(y)*.5,F.par(y)+gauss()*F.sd+(r.spec===F.spec?F.sd*.6:0));return {r:r.id,hog:pick(NAMES),score:sc,est:sc*(.93+rnd()*.14)}})});
+ classes.forEach(c=>{const F=FAIR[c.k];c.rivals=RIVALS.map(r=>{const sc=Math.max(F.par(y)*.5,F.par(y)+gauss()*F.sd+(r.spec===F.spec?F.sd*.6:0));return {r:r.id,hog:pick(NAMES),score:sc,quote:mpick(TRASH[r.id].pre),est:sc*(.93+rnd()*.14)}})});
  S.fair={year:y,classes,entries:[null,null],judged:false};
 }
 function judgeFair(){
@@ -513,13 +516,14 @@ function judgeFair(){
   rows.sort((a,b)=>b.score-a.score);
   if(mine){
    const place=rows.indexOf(mine)+1;
-   if(place<=3){const prize=[400,175,75][place-1]+50*y;const rp=[3,2,1][place-1];S.cash+=prize;S.rep+=rp;h.ribbons.push({y,cls:className(c),place});S.ribbonLog.push({y,cls:className(c),place,id:h.id});log(`Fair: #${pad(h.id)} ${h.name} took ${['a blue','a red','a white'][place-1]} ribbon in ${className(c)}. +$${prize}, +${rp} reputation.`,'good')}
-   else log(`Fair: #${pad(h.id)} ${h.name} placed ${place}th in ${className(c)}.`);
+   if(place<=3){const prize=[400,175,75][place-1]+50*y;const rp=[3,2,1][place-1];S.cash+=prize;S.rep+=rp;h.ribbons.push({y,cls:className(c),place});if(place===1)addDeed(h,'champ');S.ribbonLog.push({y,cls:className(c),place,id:h.id});log(`Fair: #${pad(h.id)} ${h.name} took ${['a blue','a red','a white'][place-1]} ribbon in ${className(c)}. +$${prize}, +${rp} reputation.`,'good')}
+   else{h.losses=(h.losses||0)+1;log(`Fair: #${pad(h.id)} ${h.name} placed ${place}th in ${className(c)}.`)}
   }
-  res.push({name:className(c),rows,fmt:F.fmt,mine});
+  let quote=null;if(mine){const top=rows[0];if(top.me){const r2=rows.find(x=>!x.me);const rv=RIVALS.find(r=>r.ranch===r2.who);quote={who:rv.name,text:mpick(TRASH[rv.id].lose)}}else{const rv=RIVALS.find(r=>r.ranch===top.who);quote={who:rv.name,text:mpick(TRASH[rv.id].win)}}}
+  res.push({name:className(c),rows,fmt:F.fmt,mine,quote});
  });
  const won=res.filter(r=>r.mine&&r.rows[0]===r.mine).length;
- if(won===2){S.cash+=500;S.rep+=3;log('Grand Champion: blue ribbons in both classes. +$500, +3 reputation.','good')}
+ if(won===2){f.entries.forEach(id=>id&&addDeed(H(id),'grand'));S.cash+=500;S.rep+=3;log('Grand Champion: blue ribbons in both classes. +$500, +3 reputation.','good')}
  if(CUR)CUR.fair={res,grand:won===2};
 }
 
@@ -587,14 +591,14 @@ function breed(){
 }
 function sell(id){
  const h=H(id);const p=price(h);
- if(nCount(h)===2&&rnd()<.12){h.status='dead';log(`#${pad(id)} ${h.name} died of porcine stress syndrome on the trailer (RYR1 n/n). No sale.`,'bad');toast(`${h.name} died in transport.`);sfx('bad')}
- else{h.status='sold';S.cash+=p;log(`Sold #${pad(id)} ${h.name} at the sale barn for $${p}.`);toast(`Sold for $${p}.`);sfx('cash')}
+ if(nCount(h)===2&&rnd()<.12){h.status='dead';log(`#${pad(id)} ${h.name} died of porcine stress syndrome on the trailer (RYR1 n/n). No sale.`,'bad');eulogy(h,'Died on the trailer to the sale barn');toast(`${h.name} died in transport.`);sfx('bad')}
+ else{h.status='sold';S.cash+=p;log(`Sold #${pad(id)} ${h.name} at the sale barn for $${p}.`);eulogy(h,`Sold at the barn for $${p}`);toast(`Sold for $${p}.`);sfx('cash')}
  clearPicks(id);
 }
 function deliver(cid,id){
  const c=S.contracts.find(x=>x.id===cid),h=H(id);if(!c||!meets(h,c.spec))return;
  h.status='sold';S.cash+=c.reward;S.rep+=1;S.contracts=S.contracts.filter(x=>x!==c);
- log(`Delivered #${pad(id)} ${h.name} to ${c.who} for $${c.reward}. +1 reputation.`,'good');toast(`Contract paid $${c.reward}.`);sfx('cash');clearPicks(id);
+ log(`Delivered #${pad(id)} ${h.name} to ${c.who} for $${c.reward}. +1 reputation.`,'good');eulogy(h,`Sent off to ${c.who}`);toast(`Contract paid $${c.reward}.`);sfx('cash');clearPicks(id);
 }
 function clearPicks(id){if(S.pick.dam===id)S.pick.dam=null;if(S.pick.sire===id)S.pick.sire=null;if(S.fair)S.fair.entries=S.fair.entries.map(e=>e===id?null:e)}
 
@@ -613,6 +617,7 @@ function farrow(d){
   else if(rnd()<F*.25*(1-.3*het))cause='inbreeding weakness';
   if(cause){L.still.push(cause);continue}
   const h=newHog(pig);h.frail=homo.length>0;L.pigs.push(h.id);
+  if(notes.length)addDeed(h,'mutant');
   if(notes.length)log(`De novo mutation in piglet #${pad(h.id)}: ${notes.join(', ')}.`,glow(h)?'good':'info');
  }
  const alive=L.pigs.length;
@@ -622,7 +627,7 @@ function farrow(d){
 }
 function advance(){
  if(S.over)return;
- CUR={season:S.season+1,litters:[],events:[],disc:[],fair:null,cash0:S.cash,legend:null};
+ CUR={season:S.season+1,litters:[],events:[],disc:[],fair:null,cash0:S.cash,legend:null,fallen:[],epithets:[]};
  S.confirm=null;
  if(S.season%4===1)judgeFair();
  S.season++;
@@ -637,26 +642,28 @@ function advance(){
  herd().filter(h=>h.preg&&h.preg.due<=S.season).forEach(farrow);
  const hs=herd();const feed=Math.round(hs.reduce((a,h)=>a+feedCost(h),0));S.cash-=feed;
  log(`${seasonName(S.season)}: feed and vet for ${hs.length} head cost $${feed}.`,'s');
- hs.forEach(h=>{if(h.quirk==='rooter'&&grown(h)&&rnd()<.15){S.cash+=40;log(`#${pad(h.id)} ${h.name} rooted up truffles worth $40.`,'good')}});
+ hs.forEach(h=>{if(h.quirk==='rooter'&&grown(h)&&rnd()<.15){S.cash+=40;h.truffles=(h.truffles||0)+1;log(`#${pad(h.id)} ${h.name} rooted up truffles worth $40.`,'good')}});
  S.mkt=clamp(S.mkt*(1+gauss()*.07),.75,1.3);
  if(S.season>4&&rnd()<.11){
   const dead=[];
-  hs.forEach(h=>{if(h.status!=='herd')return;const p=protectedNow(h)?.03:(.2+h.F*.6+(h.frail?.25:0))*(1-.3*(h.het||0));if(rnd()<p){if(h.quirk==='lucky'&&!h.luckUsed){h.luckUsed=true;return}h.status='dead';dead.push(h)}});
+  hs.forEach(h=>{if(h.status!=='herd')return;const p=protectedNow(h)?.03:(.2+h.F*.6+(h.frail?.25:0))*(1-.3*(h.het||0));if(rnd()<p){if(h.quirk==='lucky'&&!h.luckUsed){h.luckUsed=true;addDeed(h,'unkillable');return}h.status='dead';dead.push(h)}else if(!protectedNow(h)){h.survived=(h.survived||0)+1;if(h.survived>=2)addDeed(h,'unkillable')}});
+  dead.forEach(h=>eulogy(h,'Taken by PRRS'));
   log(`PRRS ${STRAINS[S.strain].name} outbreak swept the pens. Lost ${dead.length}${dead.length?': '+dead.map(h=>'#'+pad(h.id)+' '+h.name).join(', '):''}.`,'bad');
  }
  const count=herd().length;const crowd=Math.max(0,(count-S.cap)/S.cap);
  if(crowd>0)log(`Pens are over capacity (${count}/${S.cap}). Crowding is killing piglets.`,'bad');
  herd().forEach(h=>{
   const a=ageOf(h);
-  if(a>=2&&((temper(h)>85&&rnd()<.05)||(h.quirk==='escape'&&rnd()<.03))){h.status='escaped';log(`#${pad(h.id)} ${h.name} tore through the hog panel and went back to the bottoms.`,'bad');clearPicks(h.id);return}
+  if(a>=2&&((temper(h)>85&&rnd()<.05)||(h.quirk==='escape'&&rnd()<.03))){h.status='escaped';log(`#${pad(h.id)} ${h.name} tore through the hog panel and went back to the bottoms.`,'bad');eulogy(h,'Went back to the wild');clearPicks(h.id);return}
   let p=(.01+(a>16?(a-16)*.025:0)+(a<2?crowd*.3:0)+(h.frail?.04:0))*(1-.3*(h.het||0));
-  if(rnd()<p){if(h.quirk==='lucky'&&!h.luckUsed){h.luckUsed=true;log(`#${pad(h.id)} ${h.name} nearly died and pulled through. Lucky.`);return}h.status='dead';log(`#${pad(h.id)} ${h.name} died${a>16?' of old age':''}.`);clearPicks(h.id)}
+  if(rnd()<p){if(h.quirk==='lucky'&&!h.luckUsed){h.luckUsed=true;addDeed(h,'unkillable');log(`#${pad(h.id)} ${h.name} nearly died and pulled through. Lucky.`);return}h.status='dead';log(`#${pad(h.id)} ${h.name} died${a>16?' of old age':''}.`);eulogy(h,a>16?'Died of old age':'Died in the pen');clearPicks(h.id)}
  });
  S.contracts=S.contracts.filter(c=>{if(c.expires<=S.season){log(`Contract with ${c.who} expired.`);return false}return true});
  while(S.contracts.length<3)S.contracts.push(makeContract());
  if(S.cash<0){S.debt++;log(S.debt>=3?'Third season in the red. The bank foreclosed on Hollow Creek.':`You are in the red (${S.debt} of 3 seasons). Sell stock or the bank forecloses.`,'bad');if(S.debt>=3)S.over=true}else S.debt=0;
  checkDex();
- if(!S.legendAt){const L=herd().find(h=>meets(h,LEGEND));if(L){S.legendAt=S.season;S.rep+=10;CUR.legend=L.id;log(`#${pad(L.id)} ${L.name} meets every mark of the Legend. You bred it in ${S.season} seasons. +10 reputation.`,'good')}}
+ if(!S.legendAt){const L=herd().find(h=>meets(h,LEGEND));if(L){S.legendAt=S.season;S.rep+=10;CUR.legend=L.id;addDeed(L,'legend');[L.sire,L.dam].forEach(x=>x&&addDeed(H(x),'sireLegend'));log(`#${pad(L.id)} ${L.name} meets every mark of the Legend. You bred it in ${S.season} seasons. +10 reputation.`,'good')}}
+ herd().forEach(h=>{const e=epithet(h);if(e&&e!==h.ep&&grown(h)){const old=h.ep?h.name+(h.ep[0]===','?h.ep:' '+h.ep):h.name;h.ep=e;log(`${old} is now known as ${title(h)}.`,'good');CUR.epithets.push([h.id,old])}else if(!grown(h))h.ep=h.ep||''});
  checkChallenge();
  [S.pick.dam,S.pick.sire].forEach(id=>{if(id&&!['herd','stud'].includes(H(id).status))clearPicks(id)});
  CUR.cash1=S.cash;
@@ -724,6 +731,84 @@ function sfx(k,delay=0){
  if(k==='bad')tone(220,110,.5,'square',.05,delay);
 }
 
+
+/* ================= EPITHETS & FLOURISHES ================= */
+function addDeed(h,k){h.deeds=h.deeds||[];if(!h.deeds.includes(k))h.deeds.push(k)}
+const hasDeed=(h,k)=>!!(h.deeds&&h.deeds.includes(k));
+let famC={S:null,key:'',kids:{},gk:{}};
+function fam(){
+ const key=S.nextId+':'+S.season+':'+Object.keys(S.hogs).length;
+ if(famC.S===S&&famC.key===key)return famC;
+ const kids={},gk={};
+ for(const h of Object.values(S.hogs))for(const p of [h.sire,h.dam]){if(p==null)continue;kids[p]=(kids[p]||0)+1;const P=S.hogs[p];if(P)for(const g of [P.sire,P.dam])if(g!=null)gk[g]=(gk[g]||0)+1}
+ famC={S,key,kids,gk};return famC;
+}
+// ordered by prestige: the first that applies is the hog's public epithet
+const EPI=[
+ [h=>hasDeed(h,'legend'),()=>'the Legend','Met every mark of the Legend.'],
+ [h=>hasDeed(h,'grand'),()=>'the Grand Champion','Won both classes at one fair.'],
+ [h=>hasDeed(h,'sireLegend'),h=>`, ${h.sex==='M'?'Sire':'Dam'} of Legends`,'Parent of a Legend.'],
+ [h=>glow(h),()=>'the Luminous','Carries moonglow.'],
+ [(h,c)=>(c.gk[h.id]||0)>=12,h=>`, ${h.sex==='M'?'Patriarch':'Matriarch'} of Hollow Creek`,'12 or more grandchildren.'],
+ [h=>hasDeed(h,'unkillable'),()=>'the Unkillable','Cheated death or lived through two outbreaks.'],
+ [h=>hasDeed(h,'champ'),()=>'the Blue-Ribboned','Won a blue ribbon.'],
+ [(h,c)=>(c.kids[h.id]||0)>=(h.sex==='F'?30:40),h=>`, ${h.sex==='F'?'Mother':'Father'} of Multitudes`,'30+ offspring (sows) or 40+ (boars).'],
+ [h=>weight(h)>=400,()=>'the Colossal','400 lb or more.'],
+ [h=>h.sex==='M'&&tusk(h)>=5,()=>'Longtusk','A boar with 5 in of tusk.'],
+ [h=>(h.truffles||0)>=3,()=>'the Truffle Baron','Dug up truffles three times.'],
+ [h=>grown(h)&&temper(h)>=90,()=>'the Terrible','Temper 90 or higher.'],
+ [h=>grown(h)&&temper(h)<=12,()=>'the Gentle','Temper 12 or lower.'],
+ [h=>ageOf(h)>=20,()=>'the Ancient','20 seasons old.'],
+ [h=>h.F>=.25,()=>'the Royal','Pedigree F of 0.25 or more, like a European royal.'],
+ [h=>hasDeed(h,'mutant'),()=>'the Mutant','Born with a new mutation.'],
+ [h=>(h.losses||0)>=2&&!h.ribbons.length,()=>'the Also-Ran','Lost at the fair twice without a ribbon.'],
+ [h=>(h.het||0)>=.9,()=>'the Mutt','90% hybrid vigor or more.'],
+ [h=>woolly(h),()=>'the Woolly','Woolly coat.'],
+ [h=>DILUTE_NAMES.has(coatOf(h).split(' ')[0]),()=>'the Blue','Diluted coat.'],
+ [h=>ridge(h),()=>'the Bristled','Ridgeback mane.'],
+];
+function epithetsOf(h){const c=fam();return EPI.filter(e=>e[0](h,c)).map(e=>[e[1](h),e[2]])}
+function epithet(h){const c=fam();for(const e of EPI)if(e[0](h,c))return e[1](h);return ''}
+function title(h){const e=epithet(h);return e?(e[0]===','?h.name+e:h.name+' '+e):h.name}
+const EPITAPHS={steady:'Steady to the end.',wallower:'May the mud be deep where it’s going.',glutton:'Never once left the trough first.',picky:'Turned up its snout at the finest feed in the county.',escape:'No fence ever really held it.',bully:'Feared by every hog in the pen, and missed by all of them.',sweet:'Followed you to the gate every morning.',rooter:'Never met a truffle it couldn’t find.',lucky:'Its luck ran out at last.',loud:'The yard is quieter now. Too quiet.'};
+function eulogy(h,how){
+ const kids=fam().kids[h.id]||0;
+ const deeds=(h.deeds||[]).filter(d=>d!=='mutant').length;const prestige=EPI.slice(0,10).some(e=>e[0](h,fam()));
+ if(!grown(h)||!(deeds||prestige||kids>=8||ageOf(h)>=14||h.ribbons.length))return;
+ const line=`Farewell to ${title(h)}: ${ageOf(h)} seasons, ${Math.round(weight(h))} lb, ${kids} offspring${h.ribbons.length?`, ${h.ribbons.length} ribbon${h.ribbons.length>1?'s':''}`:''}. ${how}. ${EPITAPHS[h.quirk]||''}`;
+ h.eulogy=line;h.goneS=S.season;h.fame=kids+h.ribbons.length*12+(h.deeds||[]).length*8+ageOf(h);
+ log(line,'s');if(CUR)CUR.fallen.push(h.id);
+}
+const LOVES=['acorns','the mud hole','sweet potatoes','scratching on the fence post','sunbeams','persimmons','watermelon rinds','long naps','the feed truck','belly rubs','rainstorms','rotten pecans','the shade under the trailer','chasing barn cats'];
+const HATES=['the feed truck','Delbert Pruitt','thunder','the vet','the Thibodeaux boys','the rooster','its own reflection','fence panels','gravel','being weighed','Ma Leavitt’s perfume','Tuesdays','the hose','dry weather'];
+function bio(h){const r=seeded(h.id*31+7);const l=LOVES[Math.floor(r()*LOVES.length)];let x=HATES[Math.floor(r()*HATES.length)];if(x===l)x='its siblings';return [l,x]}
+const TRASH={
+ pruitt:{pre:['Tusks don’t lie, son.','I’ve seen bigger tusks on a catfish.','Pruitt boars been winning since your granddaddy was in diapers.'],win:['Like I said. Tusks don’t lie.','Better luck next year, Hollow Creek.'],lose:['Judge needs his eyes checked.','That hog of yours got lucky, is all.']},
+ thib:{pre:['We feed ’em crawfish and spite.','Our hogs eat hogs like yours for breakfast.','Bigger is better, cher.'],win:['Told you. Crawfish and spite.','Mama Thibodeaux gonna be proud tonight.'],lose:['We’ll be back next year, and bigger.','Ain’t over, Hollow Creek.']},
+ leavitt:{pre:['Presentation is everything, sugar.','Bless your heart for entering.','I brushed mine for three hours this morning.'],win:['Grooming, darlin’. Look into it.','Bless your heart.'],lose:['Well. Somebody’s been practicing.','I’ll be sending you a pie. It is not a friendly pie.']},
+ okafor:{pre:['A calm hog is a winning hog.','Patience breeds champions.','My sows have better manners than most people.'],win:['Patience, always patience.','Breed for temperament and the ribbons follow.'],lose:['Well bred. I mean that.','You earned that one.']},
+};
+const mpick=a=>a[Math.floor(Math.random()*a.length)];
+function headline(R){
+ const pigs=R.litters.flatMap(L=>L.pigs).map(H);
+ const blue=R.fair&&R.fair.res.find(r=>r.mine&&r.rows[0]===r.mine);
+ const big=R.litters.find(L=>L.pigs.length>=11);
+ const fallen=R.fallen.map(H).filter(h=>(h.fame||0)>=30).sort((a,b)=>(b.fame||0)-(a.fame||0))[0];
+ const ev=R.events.map(e=>e.msg).join(' ');
+ if(R.legend)return `LEGEND WALKS AT HOLLOW CREEK: ${title(H(R.legend))}`;
+ if(R.fair&&R.fair.grand)return 'HOLLOW CREEK SWEEPS TRI-COUNTY FAIR';
+ if(pigs.some(h=>glow(h)&&h.mut.some(m=>m.includes('Glo'))))return 'PIGLET GLOWS IN THE DARK; LOCALS ALARMED';
+ if(blue)return `BLUE RIBBON FOR ${H(blue.mine.id).name}`;
+ if(/outbreak/.test(ev))return 'PRRS STRIKES HOLLOW CREEK';
+ if(big)return `${H(big.dam).name} FARROWS ${big.pigs.length}; NEIGHBORS STUNNED`;
+ if(fallen)return `COUNTY MOURNS ${title(fallen)}`;
+ if(R.epithets.length&&Math.random()<.6){const [id,old]=R.epithets[0];return `${old} NOW KNOWN AS “${title(H(id))}”`}
+ if(/Drought year/.test(ev))return 'DROUGHT GRIPS COUNTY; FEED PRICES SOAR';
+ if(/PRRS Strain/.test(ev))return 'VETS WARN OF NEW PRRS STRAIN';
+ if(R.fair)return 'FAIR WRAPS UP; HOLLOW CREEK GOES HOME EMPTY-HANDED';
+ return mpick(['LOCAL HOGS CONTINUE TO EXIST','MUD REMAINS MUDDY, SAY OFFICIALS','RANCHER SEEN TALKING TO HOGS AGAIN','ACORN CROP DESCRIBED AS “FINE”','HOLLOW CREEK HOGS: STILL HOGS','NOTHING HAPPENS, MUCH TO EVERYONE’S RELIEF']);
+}
+
 /* ================= RENDER HELPERS ================= */
 const pad=n=>String(n).padStart(3,'0');
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
@@ -773,7 +858,7 @@ function card(h){
  return `<button class="card${S.sel===h.id?' sel':''}" data-act="sel" data-id="${h.id}" aria-pressed="${S.sel===h.id}">
  <div class="row"><span class="tag">${pad(h.id)}</span><span class="sex ${h.sex}">${h.sex==='M'?'♂':'♀'}</span></div>
  ${hogSVG(h)}
- <div class="row"><span class="nm">${esc(h.name)}</span></div>
+ <div class="row"><span class="nm" title="${esc(title(h))}">${esc(title(h))}</span></div>
  <div class="facts"><span>${coatOf(h)}</span><span>${Math.round(weight(h))} lb</span>${h.sex==='M'&&a>=2?`<span>${tusk(h).toFixed(1)} in</span>`:''}<span>T${temper(h)}</span><span>${a}s</span></div>
  <div>${pills(h)}${h.F>0?Fchip(h.F):''} ${hetChip(h.het)}</div></button>`;
 }
@@ -822,7 +907,7 @@ function detailView(){
  const sp=S.confirm==='sell'+h.id;const Q=QUIRKS[h.quirk]||QUIRKS.steady;
  const owner=isStud?RIVALS.find(r=>r.id===h.owner):null;
  return `<div class="panel" style="display:flex;flex-direction:column;gap:10px">
- <div class="row" style="flex-wrap:wrap"><span class="tag ${isStud?'rival':''}">${pad(h.id)}</span><h2 style="margin-right:auto">${esc(h.name)}</h2><span class="sex ${h.sex}">${h.sex==='M'?'♂ boar':'♀ sow'}</span></div>
+ <div class="row" style="flex-wrap:wrap"><span class="tag ${isStud?'rival':''}">${pad(h.id)}</span><h2 style="margin-right:auto">${esc(title(h))}</h2><span class="sex ${h.sex}">${h.sex==='M'?'♂ boar':'♀ sow'}</span></div>
  ${isStud?`<div class="banner info">Stud standing at ${esc(owner.ranch)}. Fee $${h.fee} per mating. Their coat and health panels are public.</div>`:''}
  ${!inHerd&&!isStud?`<div class="banner bad">This hog is ${h.status==='sold'?'sold':h.status==='escaped'?'gone wild again':h.status==='retired'?'retired from stud':'dead'}. Its record stays in the herd book for pedigree math.</div>`:''}
  <div style="max-width:300px">${hogSVG(h)}</div>
@@ -834,6 +919,9 @@ function detailView(){
   <dt>Lean</dt><dd>${lean(h).toFixed(1)}%</dd>
   <dt>Tusks</dt><dd>${tusk(h).toFixed(1)} in${h.sex==='F'?' <span class="muted">(sows barely show it)</span>':a<8?' <span class="muted">(still growing)</span>':''}</dd>
   <dt>Temper</dt><dd>${temper(h)} <span class="muted">${temper(h)<=35?'docile':temper(h)>=60?'rank':'average'}</span></dd>
+  <dt>Loves</dt><dd style="font-family:var(--body)">${bio(h)[0]}</dd><dt>Hates</dt><dd style="font-family:var(--body)">${bio(h)[1]}</dd>
+  ${epithetsOf(h).length?`<dt>Known as</dt><dd style="font-family:var(--body)">${epithetsOf(h).map(([t,w])=>`<span title="${esc(w)}">${esc(t.replace(/^, /,''))}</span>`).join(' \u00b7 ')}</dd>`:''}
+  ${h.eulogy?`<dt>Epitaph</dt><dd style="font-family:var(--body)">${esc(h.eulogy)}</dd>`:''}
   <dt>Quirk</dt><dd style="font-family:var(--body)"><b>${Q.name}</b> <span class="muted">${Q.desc}</span></dd>
   <dt>Bloodline</dt><dd style="font-family:var(--body)">${makeup(h)}</dd>
   ${h.sex==='F'?`<dt>Litters</dt><dd>${h.litters.length?h.litters.map(l=>`${l.alive}/${l.born}`).join(', ')+' <span class="muted">alive/born</span>':'none yet'}</dd>`:''}
@@ -860,7 +948,7 @@ function fairView(){
  ${f.judged?`<div class="banner info">Judging is done for this year. The next fair is announced in spring.</div>`:''}</div>
  <div class="grid-cards">${f.classes.map((c,i)=>{const F=FAIR[c.k];const el=eligible(c);const cur=f.entries[i]&&H(f.entries[i]);
   return `<div class="panel stack" style="gap:8px"><h3>${esc(className(c))}</h3><p class="muted" style="font-size:12.5px">${F.desc}</p>
-  <table class="fairtbl"><tr><th>Ranch</th><th>Word around town</th></tr>${c.rivals.map(x=>{const r=RIVALS.find(q=>q.id===x.r);return `<tr><td>${esc(r.ranch)}<br><span class="muted">${esc(x.hog)}</span></td><td class="mono">~${F.fmt(x.est)}</td></tr>`}).join('')}
+  <table class="fairtbl"><tr><th>Ranch</th><th>Word around town</th></tr>${c.rivals.map(x=>{const r=RIVALS.find(q=>q.id===x.r);return `<tr><td>${esc(r.ranch)}<br><span class="muted">${esc(x.hog)}</span>${x.quote?`<br><i style="font-size:12px">“${esc(x.quote)}”</i>`:''}</td><td class="mono">~${F.fmt(x.est)}</td></tr>`}).join('')}
   ${cur&&cur.status==='herd'?`<tr class="me"><td>Your entry<br>#${pad(cur.id)} ${esc(cur.name)}</td><td class="mono">${F.fmt(F.score(cur))} today</td></tr>`:''}</table>
   ${f.judged?'':`<label class="eyebrow" for="fe${i}">Your entry</label><select id="fe${i}" data-act="enter" data-i="${i}"><option value="">No entry</option>${el.map(h=>`<option value="${h.id}" ${f.entries[i]===h.id?'selected':''}>#${pad(h.id)} ${esc(h.name)}: ${F.fmt(F.score(h))}</option>`).join('')}</select>${el.length?'':'<div class="muted" style="font-size:12.5px">No grown hog qualifies yet.</div>'}`}</div>`}).join('')}</div>
  <div class="panel"><h3>Ribbon wall</h3>${S.ribbonLog.length?`<div class="scroll-x"><table><tr><th>Year</th><th>Class</th><th>Ribbon</th><th>Hog</th></tr>${S.ribbonLog.slice().reverse().map(r=>`<tr><td>Y${r.y+1}</td><td>${esc(r.cls)}</td><td>${['Blue','Red','White'][r.place-1]}</td><td><button class="link" data-act="sel" data-id="${r.id}">#${pad(r.id)} ${esc(H(r.id).name)}</button></td></tr>`).join('')}</table></div>`:'<p class="muted">No ribbons yet.</p>'}</div></div>`;
@@ -884,9 +972,13 @@ function marketView(){
  <div class="grid-cards">${['duroc','hamp','lw','mang'].map(k=>{const P=POPS[k];return `<div class="panel stack" style="gap:6px"><div class="row"><h3>${P.name}</h3><span class="reward" style="font-size:15px">$${P.price}</span></div><p class="muted" style="font-size:12.5px">${P.desc}</p><div class="btnrow"><button class="btn small" data-act="buy" data-k="${k}" data-sex="M" ${catOpen?'':'disabled'}>Buy boar</button><button class="btn small" data-act="buy" data-k="${k}" data-sex="F" ${catOpen?'':'disabled'}>Buy gilt</button></div></div>`}).join('')}</div></div>
  <div class="panel"><h3>Sale barn</h3><p class="muted" style="margin-top:4px">Live weight at $${(.7*S.mkt).toFixed(2)}/lb this season, adjusted for lean. Trophy boars over 3.5 in of tusk earn a premium that grows with the square of the extra length. ${S.fashion} coats sell for 40% more this year. Ridgebacks, woolly coats, moonglows and ribbon winners carry extra. Rank hogs (temper over 80) sell at a discount.</p></div></div>`;
 }
+function hallHTML(){
+ const gone=Object.values(S.hogs).filter(h=>h.eulogy).sort((a,b)=>(b.fame||0)-(a.fame||0)).slice(0,24);
+ return `<div class="stack" style="gap:8px"><h3>Hall of Hawgs</h3><p class="muted">The most storied hogs to leave Hollow Creek.</p>${gone.length?`<div class="dex">${gone.map(h=>`<button class="dexc found" data-act="sel" data-id="${h.id}">${hogSVG(h)}<span class="h">${esc(title(h))}</span><span class="hint">${esc(h.eulogy.split(': ').slice(1).join(': '))}</span></button>`).join('')}</div>`:'<p class="muted">Nobody yet. Notable hogs land here when they die, escape or are sold.</p>'}</div>`;
+}
 function dexView(){
  const n=DEX.filter(d=>S.dex[d.k]).length;const groups=[...new Set(DEX.map(d=>d.group))];
- return `<div class="stack"><div class="panel stack" style="gap:8px"><div class="row"><h2>Hogdex</h2><span class="mono">${n} / ${DEX.length}</span></div><div class="progress"><i style="width:${n/DEX.length*100}%"></i></div><p class="muted">Every first discovery pays $50 and 1 reputation. Entries are judged on what a hog shows, not what it carries.</p></div>
+ return `<div class="stack">${hallHTML()}<div class="panel stack" style="gap:8px"><div class="row"><h2>Hogdex</h2><span class="mono">${n} / ${DEX.length}</span></div><div class="progress"><i style="width:${n/DEX.length*100}%"></i></div><p class="muted">Every first discovery pays $50 and 1 reputation. Entries are judged on what a hog shows, not what it carries.</p></div>
  ${groups.map(g=>`<div class="stack" style="gap:8px"><h3>${g}</h3><div class="dex">${DEX.filter(d=>d.group===g).map(d=>{const e=S.dex[d.k];const h=e&&H(e.id);
   return e?`<button class="dexc found" data-act="sel" data-id="${e.id}">${h?hogSVG(h):''}<span class="h">${esc(d.name)}</span><span class="hint">First: #${pad(e.id)} ${esc(h?h.name:'')}, ${seasonName(e.s)}</span></button>`
   :`<div class="dexc locked">${SIL}<span class="h">???</span><span class="hint">${esc(d.name)}. ${esc(d.hint)}</span></div>`}).join('')}</div></div>`).join('')}</div>`;
@@ -939,6 +1031,9 @@ function guideView(){
  <tr><td>Breeds</td><td>Duroc (red), Hampshire (black belted), Large White (dominant white, prolific) and Mangalica (curly coat) are real breeds. Their stats here are approximate.</td></tr></table></div>
  <h3>Mutation</h3>
  <p>Genes mutate thousands of times faster than in real pigs. Moonglow and the great tusk gene only arise this way or, for Tk, from Hill Country stock and the Pruitt line.</p>
+ <h3>Epithets</h3>
+ <p>Hogs earn names. A hog goes by the most prestigious one it qualifies for, and the season report announces new ones. Notable hogs get a eulogy when they leave and a place in the Hall of Hawgs.</p>
+ <div class="scroll-x"><table><tr><th>Epithet</th><th>How to earn it</th></tr>${EPI.map(e=>`<tr><td>${esc(e[1]({sex:'M'}).replace(/^, /,''))}</td><td>${esc(e[2])}</td></tr>`).join('')}</table></div>
  <h3>Progress</h3>
  <p>Reputation comes from ribbons, contracts and Hogdex discoveries. Piney Woods trapping opens at 3, the breed catalog at 5, and Hill Country at 8.</p>
  </div>`;
@@ -955,16 +1050,19 @@ function showReport(R){
    return `<button class="pig ${glow(h)?'glowing':(disc.length||rare(h))?'rare':''}" style="--i:${i++}" data-act="pigsel" data-id="${id}"><span class="row"><span class="tag">${pad(id)}</span><span class="sex ${h.sex}">${h.sex==='M'?'♂':'♀'}</span></span>${hogSVG(h)}<span style="font-size:12.5px;font-weight:600">${esc(h.name)}</span><span class="facts"><span>${coatOf(h)}</span>${woolly(h)?'<span>woolly</span>':''}${ridge(h)?'<span>ridge</span>':''}</span>${badges.map(b=>`<span class="b">${esc(b)}</span>`).join('')}</button>`}).join('');
   const st=L.still.map(c=>`<div class="pig still" style="--i:${i++}"><b>Stillborn</b><span style="font-size:12px">${esc(c)}</span></div>`).join('');
   return `<div class="litter"><div class="row" style="flex-wrap:wrap"><h3>${esc(d.name)} × ${esc(s.name)}</h3><span>${Fchip(L.F)} ${hetChip(L.het)} <span class="mono">${L.pigs.length} alive / ${L.pigs.length+L.still.length} born</span></span></div><div class="piglets">${cards}${st}</div></div>`}).join('');
- const fair=R.fair?`<div class="stack" style="gap:8px"><h3>${R.fair.grand?'Grand Champion! ':''}Tri-County Fair results</h3><div class="grid-cards">${R.fair.res.map(r=>`<div class="scroll-x"><div class="eyebrow">${esc(r.name)}</div><table class="fairtbl">${r.rows.map((x,j)=>`<tr class="${x.me?'me':''}"><td>${j+1}</td><td>${esc(x.who)}<br><span class="muted">${esc(x.hog)}</span></td><td class="mono">${r.fmt(x.score)}</td></tr>`).join('')}</table>${r.mine?'':'<p class="muted" style="font-size:12.5px">You had no entry.</p>'}</div>`).join('')}</div></div>`:'';
+ const fair=R.fair?`<div class="stack" style="gap:8px"><h3>${R.fair.grand?'Grand Champion! ':''}Tri-County Fair results</h3><div class="grid-cards">${R.fair.res.map(r=>`<div class="scroll-x"><div class="eyebrow">${esc(r.name)}</div><table class="fairtbl">${r.rows.map((x,j)=>`<tr class="${x.me?'me':''}"><td>${j+1}</td><td>${esc(x.who)}<br><span class="muted">${esc(x.hog)}</span></td><td class="mono">${r.fmt(x.score)}</td></tr>`).join('')}</table>${r.mine?'':'<p class="muted" style="font-size:12.5px">You had no entry.</p>'}${r.quote?`<p style="font-size:12.5px"><b>${esc(r.quote.who)}:</b> <i>“${esc(r.quote.text)}”</i></p>`:''}</div>`).join('')}</div></div>`:'';
  const disc=R.disc.filter(([,h])=>!R.litters.some(L=>L.pigs.includes(h.id)));
- const ev=R.events.filter(e=>!/farrowed|De novo|Hogdex|Fair:/.test(e.msg));
+ const ev=R.events.filter(e=>!/farrowed|De novo|Hogdex|Fair:|Farewell|now known as/.test(e.msg));
  const dc=R.cash1-R.cash0;
  ov.innerHTML=`<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="rpt-h">
+ <div class="gazette"><div class="mast">The Hollow Creek Gazette · ${seasonName(R.season)} · 5¢</div><div class="hl">${esc(headline(R))}</div></div>
  <div class="row" style="flex-wrap:wrap"><div><div class="eyebrow">Season report</div><h2 id="rpt-h">${seasonName(R.season)}</h2></div><span class="mono ${dc<0?'bad':'good'}">${dc<0?'−':'+'}$${Math.abs(Math.round(dc))} this season</span></div>
  ${R.legend?`<div class="banner"><b>The Legend walks.</b> #${pad(R.legend)} ${esc(H(R.legend).name)} meets every mark.</div>`:''}
  ${S.chResult&&S.chResult.s===S.season?`<div class="banner ${S.chResult.win?'':'bad'}"><b>${S.chResult.win?'Challenge complete':'Challenge failed'}.</b> ${S.chResult.win?`Finished in ${S.chResult.s} seasons.`:'Time ran out.'}</div>`:''}
  ${litters||'<p class="muted">No litters this season.</p>'}
  ${fair}
+ ${R.epithets.length?`<div><h3>New names</h3><ul class="evts">${R.epithets.map(([id,old])=>`<li class="good">${esc(old)} is now known as <b>${esc(title(H(id)))}</b>.</li>`).join('')}</ul></div>`:''}
+ ${R.fallen.length?`<div><h3>Gone but not forgotten</h3><ul class="evts">${R.fallen.map(id=>`<li>${esc(H(id).eulogy)}</li>`).join('')}</ul></div>`:''}
  ${disc.length?`<div><h3>Hogdex discoveries</h3><ul class="evts">${disc.map(([d,h])=>`<li class="good">${esc(d.name)}: #${pad(h.id)} ${esc(h.name)}</li>`).join('')}</ul></div>`:''}
  ${ev.length?`<div><h3>On the ranch</h3><ul class="evts">${ev.map(e=>`<li class="${e.cls==='bad'?'bad':e.cls==='good'?'good':''}">${esc(e.msg)}</li>`).join('')}</ul></div>`:''}
  <div class="btnrow"><button class="btn primary" data-act="closerpt" id="rpt-close">Back to the ranch</button></div></div>`;
@@ -1051,7 +1149,7 @@ function render(){
   <button class="btn primary" data-act="advance" ${S.over?'disabled':''}>Next season ▸</button></div></header>
  ${S.over?`<div class="banner bad"><b>Foreclosed.</b> Hollow Creek lasted ${S.season} seasons. <button class="btn small" data-act="newgame" data-ch="long">Start a new ranch</button></div>`:''}
  ${ch?`<div class="banner ${S.chResult&&!S.chResult.win?'bad':'info'}"><b>Challenge: ${ch.name}.</b> ${ch.desc} ${S.chResult?(S.chResult.win?`Done in ${S.chResult.s} seasons.`:'Failed.'):`${ch.limit-S.season} seasons left.`}${S.feralUsed?' Feral mode was used, so this run won’t set a best time.':''}</div>`:''}
- <div class="layout"><main><nav class="tabs" role="tablist">${[['herd','Herd & breeding'],['fair','Fair'],['market','Market'],['dex','Hogdex'],['log','Ledger'],['guide','Guide & new game']].map(([k,l])=>`<button class="tab" role="tab" aria-selected="${S.tab===k}" data-act="tab" data-t="${k}">${l}${k==='fair'&&fairOpen?'<span class="dot" aria-label="entries open"></span>':''}</button>`).join('')}</nav>
+ <div class="layout"><main><nav class="tabs" role="tablist">${[['herd','Herd & breeding'],['fair','Fair'],['market','Market'],['dex','Hogdex & Hall'],['log','Ledger'],['guide','Guide & new game']].map(([k,l])=>`<button class="tab" role="tab" aria-selected="${S.tab===k}" data-act="tab" data-t="${k}">${l}${k==='fair'&&fairOpen?'<span class="dot" aria-label="entries open"></span>':''}</button>`).join('')}</nav>
  ${{herd:herdView,fair:fairView,market:marketView,dex:dexView,log:logView,guide:guideView}[S.tab]()}</main>
  <aside class="detail" id="detail">${detailView()}</aside></div>`;
  const ys=document.getElementById('yardSlot');if(ys){ensureYard();ys.replaceWith(yard.el);syncYard()}
