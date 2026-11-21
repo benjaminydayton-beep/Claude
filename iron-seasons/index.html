@@ -41,6 +41,8 @@ header.bar{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 24px;paddin
 .speeds button{background:transparent;border:0;border-left:1px solid var(--ink);padding:4px 11px;font:16px var(--f-body);font-variant-numeric:lining-nums}
 .speeds button:first-child{border-left:0}
 .speeds button.on{background:var(--ink);color:var(--card)}
+.speeds .pausebtn{font:15px var(--f-caps);letter-spacing:.05em;min-width:6.4em}
+.speeds .pausebtn.on{background:var(--carmine);color:var(--card)}
 main{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:18px;align-items:start}
 @media (max-width:980px){main{grid-template-columns:minmax(0,1fr)}}
 .mapwrap{min-width:0}
@@ -116,7 +118,7 @@ label.f{display:grid;gap:3px;font-size:14px;color:var(--muted);font-style:italic
   <div class="stat"><span class="k">Net worth</span><span class="v" id="hNet">—</span></div>
   <div class="stat"><span class="k">Territory pop.</span><span class="v" id="hPop">—</span></div>
   <div class="speeds" role="group" aria-label="Game speed">
-    <button data-sp="0" id="sp0">❚❚</button><button data-sp="1">1×</button><button data-sp="2">2×</button><button data-sp="3">4×</button><button data-sp="4">8×</button>
+    <button data-sp="0" id="sp0" class="pausebtn" title="Pause or resume (Space or P)">❚❚ Pause</button><button data-sp="1">1×</button><button data-sp="2">2×</button><button data-sp="3">4×</button><button data-sp="4">8×</button>
   </div>
 </header>
 
@@ -202,7 +204,7 @@ label.f{display:grid;gap:3px;font-size:14px;color:var(--muted);font-style:italic
       <li><b>Rival barons</b> arrive over the first two years. Where their depots overlap yours, the better-served railroad gets more of the cargo. You can rent running rights on each other's track, and buy their stock until you own enough to force a merger.</li>
       <li><b>Boomtowns</b> appear after silver strikes in the hills. Connect one within a year or it goes bust.</li>
     </ul>
-    <p class="hint">How to start: put a <b>Station</b> next to two towns, survey <b>Track</b> between them (click the start, then the end, then Build), and order a <b>Train</b> that stops at both. Space pauses. Keys 1–4 set the speed.</p>
+    <p class="hint">How to start: put a <b>Station</b> next to two towns, survey <b>Track</b> between them (click the start, then the end, then Build), and order a <b>Train</b> that stops at both. Space or P pauses (you can still build while paused). Keys 1–4 set the speed.</p>
     <div class="btns"><button class="btn" id="newGame">Take the charter</button><button class="btn ghost" id="contGame" hidden>Continue saved game</button><button class="btn ghost" id="reroll">New map</button></div>
     <p class="hint num" id="seedLine"></p>
   </div>
@@ -862,7 +864,7 @@ function absorb(r,withMoney){
   for(const tr of S.trains)if(tr.owner===r.id){tr.owner=0;tr.no=S.noCtr[0]=(S.noCtr[0]||0)+1}
   if(withMoney){S.cash+=r.cash;S.debt+=r.debt}
   dropRights(r);S.proposals=S.proposals.filter(p=>p.from!==r.id);r.dead=true;r.merged=true;r.pct=0;graphChanged()}
-function propose(p){p.id=S.nextProp++;p.expires=p.expires||S.day+60;S.proposals.push(p);const d=RD(p.from);
+function propose(p){autoPause('A rival is waiting for your answer (Rivals tab)');p.id=S.nextProp++;p.expires=p.expires||S.day+60;S.proposals.push(p);const d=RD(p.from);
   if(p.kind==='rights')news(`${d.baron} asks to run ${d.co} trains over your track for ${moneyFull(p.toll)} per tile. Answer in the Rivals tab.`,'warn');
   else news(`The ${d.co} receivers offer you its whole network for ${moneyFull(p.price)}. The offer stands for 90 days (Rivals tab).`,'warn');
   UI.dirtyUI=true}
@@ -928,7 +930,7 @@ function onMonth(d){
   if(d.m===0)yearEnd(d);
   for(const g of GOALS)if(!S.goalsMet[g.id]&&g.test()){S.goalsMet[g.id]=monthStr();news(`Charter goal met: ${g.text}.`,'good')}
   // bankruptcy
-  if(S.cash<0){S.neg++;if(S.neg===1)news('The treasury is overdrawn. Borrow or sell assets within 3 months or the receivers take over.','bad');if(S.neg>=4)return endGame(true)}else S.neg=0;
+  if(S.cash<0){S.neg++;if(S.neg===1)autoPause('Treasury overdrawn: borrow or sell within 3 months');if(S.neg===1)news('The treasury is overdrawn. Borrow or sell assets within 3 months or the receivers take over.','bad');if(S.neg>=4)return endGame(true)}else S.neg=0;
   if(d.mi>=END_MONTHS+START_DAY_MONTH)return endGame(false);
   saveGame();
 }
@@ -1178,8 +1180,17 @@ function drawOverlay(){
   if(h>=0){ctx.strokeStyle='rgba(42,33,24,.75)';ctx.lineWidth=1;ctx.strokeRect(X(h)*TS+.5,Y(h)*TS+.5,TS-1,TS-1)}
   if(UI.tab==='trains'){for(const[k,id]of UI.stops.entries()){const s=S.stations[id];const x=cx(s.tile)+TS*.45,y=cy(s.tile)-TS*.45;ctx.fillStyle='#a3312a';ctx.beginPath();ctx.arc(x,y,TS*.32,0,7);ctx.fill();ctx.fillStyle=PAPER;ctx.font=`600 ${Math.max(9,TS*.42)}px "EB Garamond",serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(k+1,x,y+.5);ctx.textBaseline='alphabetic'}}
 }
+function drawPausedStamp(cw,ch){
+  const x=cw/2,y=M+TS*2.6,fs=Math.max(18,TS*1.3);ctx.save();ctx.translate(x,y);ctx.rotate(-.035);
+  ctx.font=`${fs}px "IM Fell English SC",Georgia,serif`;if('letterSpacing' in ctx)ctx.letterSpacing=(fs*.18)+'px';ctx.textAlign='center';ctx.textBaseline='middle';
+  const w=ctx.measureText('Paused').width+fs*1.2,h=fs*1.55;
+  ctx.fillStyle='rgba(244,238,220,.88)';ctx.fillRect(-w/2,-h/2,w,h);ctx.strokeStyle='#a3312a';ctx.lineWidth=2.2;ctx.strokeRect(-w/2,-h/2,w,h);ctx.lineWidth=.9;ctx.strokeRect(-w/2+4,-h/2+4,w-8,h-8);
+  ctx.fillStyle='#a3312a';ctx.fillText('Paused',fs*.09,1);if('letterSpacing' in ctx)ctx.letterSpacing='0px';
+  const sub=UI.pauseReason||'Press Space or Resume to continue. You can still build while paused.';
+  ctx.font=`italic ${Math.max(11,fs*.5)}px "EB Garamond",Georgia,serif`;const sw=ctx.measureText(sub).width+16;
+  ctx.fillStyle='rgba(244,238,220,.9)';ctx.fillRect(-sw/2,h/2+4,sw,fs*.75);ctx.fillStyle='#2a2118';ctx.fillText(sub,0,h/2+4+fs*.38);ctx.restore()}
 function render(){if(!S)return;drawBase();const cw=W*TS+2*M,ch=H*TS+2*M;ctx.clearRect(0,0,cw,ch);ctx.drawImage(base,0,0,cw,ch);
-  ctx.save();ctx.translate(M,M);ctx.beginPath();ctx.rect(0,0,W*TS,H*TS);ctx.clip();drawTrack();drawInds();drawStations();drawTrains();drawTowns();drawOverlay();ctx.restore()}
+  ctx.save();ctx.translate(M,M);ctx.beginPath();ctx.rect(0,0,W*TS,H*TS);ctx.clip();drawTrack();drawInds();drawStations();drawTrains();drawTowns();drawOverlay();ctx.restore();if(UI.speed===0&&!S.over&&$('intro').hidden)drawPausedStamp(cw,ch)}
 
 // ================= tools =================
 function upgradeRun(i){ // contiguous run of plain track between junctions/stations
@@ -1238,7 +1249,11 @@ function townHTML(tw){
 
 // ================= UI panels =================
 const $=id=>document.getElementById(id);
-function setSpeed(v){UI.speed=v;document.querySelectorAll('.speeds button').forEach(b=>b.classList.toggle('on',+b.dataset.sp===v))}
+function setSpeed(v,reason){if(v>0){UI.prevSpeed=v;UI.pauseReason=''}else UI.pauseReason=reason||'';UI.speed=v;
+  document.querySelectorAll('.speeds button').forEach(b=>b.classList.toggle('on',+b.dataset.sp===v));
+  const pb=document.getElementById('sp0');if(pb)pb.textContent=v?'❚❚ Pause':'▶ Resume'}
+function togglePause(){if(!S||S.over)return;setSpeed(UI.speed?0:(UI.prevSpeed||1))}
+function autoPause(reason){if(S&&!S.over&&UI.speed>0)setSpeed(0,reason)}
 function updateHeader(){
   $('hDate').textContent=dateStr();
   $('hSeason').innerHTML=`${SEASONS[S.season]} <span class="sev sev${S.sev}">${SEVN[S.season][S.sev]}</span>`;
@@ -1387,7 +1402,7 @@ document.querySelectorAll('#grades button').forEach(b=>b.onclick=()=>{UI.grade=+
 document.querySelectorAll('#prefs button').forEach(b=>b.onclick=()=>{UI.pref=b.dataset.pref;document.querySelectorAll('#prefs button').forEach(x=>x.classList.toggle('on',x===b));UI.ghostKey='';
   if(UI.legs.length){const pts=[UI.legs[0][0],...UI.legs.map(L=>L[L.length-1])];UI.legs=[];for(let k=1;k<pts.length;k++){const p=survey(pts[k-1],pts[k],UI.grade,UI.pref);if(p)UI.legs.push(p)}}updateUI(true)});
 document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
-document.querySelectorAll('.speeds button').forEach(b=>b.onclick=()=>setSpeed(+b.dataset.sp));
+document.querySelectorAll('.speeds button').forEach(b=>b.onclick=()=>{if(+b.dataset.sp===0)togglePause();else setSpeed(+b.dataset.sp)});
 $('mdl').onchange=()=>updateUI(true);$('cars').oninput=()=>updateUI(true);
 $('clrStops').onclick=()=>{UI.stops=[];updateUI(true)};
 $('buyBtn').onclick=()=>{const m=MODELS.find(x=>x.id===$('mdl').value);buyTrain(m,clamp(+$('cars').value||1,1,m.maxCars),UI.stops);UI.stops=[];updateUI(true)};
@@ -1404,12 +1419,12 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(
   for(const n of['almanac','ledger','rivals'])$(n).dataset.h='';updateUI(true)});
 document.addEventListener('change',e=>{if(e.target.id==='autoRep'){S.autoRepair=e.target.checked;if(S.autoRepair)autoRepair()}});
 document.addEventListener('keydown',e=>{if(!S||e.target.matches('input,select'))return;const k=e.key.toLowerCase();
-  if(k===' '){e.preventDefault();setSpeed(UI.speed?0:UI.prevSpeed||1);if(UI.speed)UI.prevSpeed=UI.speed}
-  else if('1234'.includes(k)&&k.length===1){setSpeed(+k);UI.prevSpeed=+k}
+  if(k===' '||k==='p'){e.preventDefault();togglePause()}
+  else if('1234'.includes(k)&&k.length===1){setSpeed(+k)}
   else if(k==='escape')cancelSurvey();else if(k==='enter'&&UI.legs.length)commitTrack();
   else if(k==='q')setTool('inspect');else if(k==='s')setTool('station');else if(k==='t')setTool('track');else if(k==='u')setTool('upgrade');else if(k==='x')setTool('demolish');
   updateUI(true)});
-document.addEventListener('keyup',e=>{if(e.key===' '&&UI.speed)UI.prevSpeed=UI.speed});
+document.addEventListener('visibilitychange',()=>{if(document.hidden)autoPause('Paused while you were away')});
 window.addEventListener('resize',()=>{if(S)resize()});
 
 // ================= loop & boot =================
