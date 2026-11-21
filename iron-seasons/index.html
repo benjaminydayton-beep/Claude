@@ -1,0 +1,1134 @@
+<title>Iron Seasons</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Big+Shoulders+Display:wght@600;800&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: dispatcher's desk. Survey map on the left, telegraph-office ledger panel on the right; stacks on phones. Single committed dark look. */
+:root{
+  --desk:#0e1b26;      /* page ground */
+  --panel:#142839;     /* prussian-blue ledger panel */
+  --panel2:#1c364b;    /* raised rows */
+  --rule:#2b4a63;      /* hairlines */
+  --paper:#e7e9e2;     /* pale ink */
+  --muted:#93a8b6;
+  --lamp:#f0a63a;      /* signal-lamp amber: the one accent */
+  --go:#71c48f;
+  --stop:#e3604f;
+  --snow:#dfe9f2;
+  --flood:#5fb3c9;
+  --f-display:"Big Shoulders Display","Arial Narrow",Impact,sans-serif;
+  --f-body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,Menlo,Consolas,monospace;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%}
+body{background:var(--desk);color:var(--paper);font:14px/1.45 var(--f-body);margin:0;
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:10px 16px}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,select:focus-visible,input:focus-visible{outline:2px solid var(--lamp);outline-offset:2px}
+.num{font-family:var(--f-mono);font-variant-numeric:tabular-nums}
+header.bar{display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px;padding:6px 0 10px;border-bottom:1px solid var(--rule);margin-bottom:10px}
+.brand{font-family:var(--f-display);font-weight:800;font-size:30px;letter-spacing:.04em;text-transform:uppercase;line-height:1;color:var(--paper)}
+.brand small{display:block;font:500 10px/1.2 var(--f-body);letter-spacing:.18em;color:var(--muted);margin-top:3px}
+.stat{display:flex;flex-direction:column;gap:1px;min-width:0}
+.stat .k{font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
+.stat .v{font:500 16px var(--f-mono);font-variant-numeric:tabular-nums}
+.v.neg{color:var(--stop)}
+.season-chip{display:inline-flex;align-items:center;gap:6px;padding:2px 8px;border-radius:3px;background:var(--panel2);font-size:13px}
+.sev{display:inline-block;padding:0 6px;border-radius:2px;font-size:11px;font-weight:600;letter-spacing:.06em;text-transform:uppercase}
+.sev0{background:#2f5a43;color:#cfeedd}.sev1{background:#6b5222;color:#ffe2a8}.sev2{background:#6e2c25;color:#ffd0c8}
+.speeds{display:flex;gap:4px;margin-left:auto}
+.speeds button{background:var(--panel);border:1px solid var(--rule);padding:4px 10px;border-radius:3px;font-family:var(--f-mono);font-size:13px}
+.speeds button.on{background:var(--lamp);color:#1b1206;border-color:var(--lamp)}
+main{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:14px;align-items:start}
+@media (max-width:980px){main{grid-template-columns:minmax(0,1fr)}}
+.mapwrap{min-width:0}
+.mapframe{position:relative;border:1px solid var(--rule);background:#0a141c;line-height:0}
+canvas#map{display:block;width:100%;height:auto;touch-action:manipulation}
+.hoverline{font-size:12px;color:var(--muted);min-height:2.9em;padding:6px 2px 4px;line-height:1.45}
+.hoverline b{color:var(--paper);font-weight:600}
+.legend{display:flex;flex-wrap:wrap;gap:4px 14px;font-size:11px;color:var(--muted);padding:2px 2px 8px}
+.legend i{display:inline-block;width:10px;height:10px;vertical-align:-1px;margin-right:4px;border-radius:2px}
+.news{border-top:1px solid var(--rule);padding-top:8px}
+.news h3,.panel h3{font-family:var(--f-display);font-weight:600;font-size:15px;letter-spacing:.12em;text-transform:uppercase;margin:0 0 6px;color:var(--muted)}
+.news ol{list-style:none;margin:0;padding:0;display:grid;gap:3px;font-size:13px}
+.news li{display:grid;grid-template-columns:88px minmax(0,1fr);gap:8px}
+.news li .d{color:var(--muted);font-family:var(--f-mono);font-size:11px;padding-top:2px}
+.news li.bad span:last-child{color:#ffb4a8}.news li.good span:last-child{color:#bfe9cf}.news li.warn span:last-child{color:#ffd99a}
+.panel{background:var(--panel);border:1px solid var(--rule);border-radius:4px;min-width:0}
+.tabs{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--rule)}
+.tabs button{background:none;border:0;padding:9px 4px;font-family:var(--f-display);font-weight:600;font-size:15px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid transparent}
+.tabs button.on{color:var(--paper);border-bottom-color:var(--lamp)}
+.tabbody{padding:12px;display:grid;gap:14px}
+.seg{display:flex;flex-wrap:wrap;gap:4px}
+.seg button{flex:1 1 auto;background:var(--panel2);border:1px solid var(--rule);border-radius:3px;padding:6px 8px;font-size:13px}
+.seg button.on{border-color:var(--lamp);color:var(--lamp);background:#2a2a20}
+.seg button kbd{font:10px var(--f-mono);color:var(--muted);margin-left:4px}
+.row{display:flex;justify-content:space-between;gap:10px;align-items:baseline}
+.row .k{color:var(--muted)}
+.card{background:var(--panel2);border-radius:3px;padding:10px;display:grid;gap:6px;font-size:13px}
+.card h4{margin:0;font-size:15px;font-weight:600}
+.hint{font-size:12px;color:var(--muted)}
+.btn{background:var(--lamp);color:#1b1206;border:0;border-radius:3px;padding:7px 12px;font-weight:600}
+.btn:disabled{opacity:.4;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--paper);border:1px solid var(--rule)}
+.btn.small{padding:3px 8px;font-size:12px}
+.btns{display:flex;flex-wrap:wrap;gap:6px}
+.bar{height:6px;background:#0e2232;border-radius:3px;overflow:hidden}
+.bar>i{display:block;height:100%;background:var(--go)}
+.bar.lo>i{background:var(--stop)}.bar.mid>i{background:var(--lamp)}
+table.t{width:100%;border-collapse:collapse;font-size:12px}
+table.t td,table.t th{padding:3px 4px;text-align:left;border-bottom:1px solid var(--rule)}
+table.t th{color:var(--muted);font-weight:500;font-size:11px;letter-spacing:.06em;text-transform:uppercase}
+table.t td.r,table.t th.r{text-align:right}
+.trainrow{display:grid;grid-template-columns:12px minmax(0,1fr) auto;gap:8px;align-items:start;padding:8px;background:var(--panel2);border-radius:3px;font-size:12px}
+.trainrow .sw{width:10px;height:10px;border-radius:2px;margin-top:4px}
+.trainrow .nm{font-weight:600;font-size:13px}
+select,input[type=number]{background:#0e2232;border:1px solid var(--rule);color:var(--paper);border-radius:3px;padding:5px 6px;font:inherit;width:100%}
+label.f{display:grid;gap:3px;font-size:12px;color:var(--muted)}
+.stops{display:flex;flex-wrap:wrap;gap:4px}
+.stops span{background:#0e2232;border:1px solid var(--rule);border-radius:3px;padding:2px 6px;font-size:12px}
+.goal{display:grid;grid-template-columns:18px minmax(0,1fr);gap:6px;font-size:13px}
+.goal .ck{width:14px;height:14px;border:1.5px solid var(--muted);border-radius:2px;margin-top:3px}
+.goal.met .ck{background:var(--go);border-color:var(--go)}
+.overlay{position:fixed;inset:0;background:rgba(5,11,16,.82);display:flex;align-items:center;justify-content:center;z-index:50;padding:20px max(16px,env(safe-area-inset-left,0px))}
+.modal{background:var(--panel);border:1px solid var(--rule);border-radius:6px;max-width:640px;width:100%;max-height:90vh;overflow:auto;padding:22px 24px;display:grid;gap:12px}
+.modal h2{font-family:var(--f-display);font-weight:800;font-size:40px;letter-spacing:.03em;text-transform:uppercase;margin:0;line-height:1;text-wrap:balance}
+.modal p{margin:0;max-width:62ch}
+.modal ul{margin:0;padding-left:18px;display:grid;gap:4px;max-width:62ch}
+.modal .eyebrow{font-size:11px;letter-spacing:.2em;text-transform:uppercase;color:var(--lamp)}
+.spark{width:100%;height:60px;display:block}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+
+<header class="bar">
+  <div class="brand">Iron Seasons<small>Territorial Rail Co. · Dispatch</small></div>
+  <div class="stat"><span class="k">Date</span><span class="v" id="hDate">—</span></div>
+  <div class="stat"><span class="k">Season</span><span id="hSeason" class="season-chip">—</span></div>
+  <div class="stat"><span class="k">Cash</span><span class="v" id="hCash">—</span></div>
+  <div class="stat"><span class="k">Debt</span><span class="v" id="hDebt">—</span></div>
+  <div class="stat"><span class="k">Net worth</span><span class="v" id="hNet">—</span></div>
+  <div class="stat"><span class="k">Territory pop.</span><span class="v" id="hPop">—</span></div>
+  <div class="speeds" role="group" aria-label="Game speed">
+    <button data-sp="0" id="sp0">❚❚</button><button data-sp="1">1×</button><button data-sp="2">2×</button><button data-sp="3">4×</button><button data-sp="4">8×</button>
+  </div>
+</header>
+
+<main>
+  <section class="mapwrap">
+    <div class="mapframe"><canvas id="map" width="880" height="600" aria-label="Territory map"></canvas></div>
+    <div class="legend">
+      <span><i style="background:#c9c7a0"></i>Plains</span><span><i style="background:#6e8a5c"></i>Forest</span><span><i style="background:#a6977a"></i>Hills</span><span><i style="background:#827a74"></i>Mountains</span><span><i style="background:#5fb3c9"></i>Floodplain</span>
+      <span><i style="background:#8a6a4a"></i>Light track</span><span><i style="background:#3a3d40"></i>Ballasted</span><span><i style="background:#1a1c1e;outline:1px solid #d0d6da"></i>Engineered</span>
+    </div>
+    <div class="hoverline" id="hover">Hover the map to survey a tile.</div>
+    <div class="news"><h3>Telegraph</h3><ol id="news"></ol></div>
+  </section>
+
+  <aside class="panel">
+    <nav class="tabs" role="tablist">
+      <button data-tab="build" class="on">Build</button><button data-tab="trains">Trains</button><button data-tab="almanac">Almanac</button><button data-tab="ledger">Ledger</button>
+    </nav>
+
+    <div class="tabbody" id="tab-build">
+      <div>
+        <h3>Tool</h3>
+        <div class="seg" id="tools">
+          <button data-tool="inspect" class="on">Inspect<kbd>Q</kbd></button>
+          <button data-tool="station">Station<kbd>S</kbd></button>
+          <button data-tool="track">Track<kbd>T</kbd></button>
+          <button data-tool="upgrade">Upgrade<kbd>U</kbd></button>
+          <button data-tool="demolish">Demolish<kbd>X</kbd></button>
+        </div>
+      </div>
+      <div id="gradeBox">
+        <h3>Track grade</h3>
+        <div class="seg" id="grades">
+          <button data-grade="1">Light</button><button data-grade="2" class="on">Ballasted</button><button data-grade="3">Engineered</button>
+        </div>
+        <p class="hint" id="gradeHint"></p>
+      </div>
+      <div id="prefBox">
+        <h3>Surveyor's priority</h3>
+        <div class="seg" id="prefs">
+          <button data-pref="cheap" class="on">Cheapest</button><button data-pref="safe">Weatherproof</button><button data-pref="fast">Flattest</button>
+        </div>
+      </div>
+      <div id="toolCard" class="card"></div>
+    </div>
+
+    <div class="tabbody" id="tab-trains" hidden>
+      <div class="card" id="buyCard">
+        <h4>Order a train</h4>
+        <label class="f">Locomotive<select id="mdl"></select></label>
+        <label class="f">Cars (10 units each)<input type="number" id="cars" min="1" max="5" value="4"></label>
+        <div class="hint" id="mdlInfo"></div>
+        <div><div class="hint" style="margin-bottom:4px">Stops: click stations on the map in order.</div><div class="stops" id="stopList"><span>none yet</span></div></div>
+        <div class="btns"><button class="btn" id="buyBtn" disabled>Buy &amp; dispatch</button><button class="btn ghost" id="clrStops">Clear stops</button></div>
+      </div>
+      <div><h3>Roster</h3><div id="roster" style="display:grid;gap:6px"></div></div>
+    </div>
+
+    <div class="tabbody" id="tab-almanac" hidden>
+      <div id="almanac" style="display:grid;gap:14px"></div>
+    </div>
+
+    <div class="tabbody" id="tab-ledger" hidden>
+      <div id="ledger" style="display:grid;gap:14px"></div>
+    </div>
+  </aside>
+</main>
+
+<div class="overlay" id="intro">
+  <div class="modal">
+    <div class="eyebrow">Territorial charter · March 1870</div>
+    <h2>Iron Seasons</h2>
+    <p>The legislature has granted you a railroad charter across an unsettled territory. You have 30 years. The towns out here are fragile: the ones you serve will grow, and the ones you ignore will empty out. The land fights back every season.</p>
+    <ul>
+      <li><b>Towns live on what you haul.</b> Grain feeds them, building supplies and steel make them grow, and coal keeps them alive through winter. A town that gets no passenger service shrinks, and its people move to towns that do.</li>
+      <li><b>Industries follow your rails.</b> Mines and farms you serve well will expand. Ones you ignore for years shut down. New ones open near your track.</li>
+      <li><b>Weather is a bet.</b> Spring floods wash out light track on floodplains and bridges. Winter snow closes hill and mountain track unless it's engineered with snow sheds or tunnels. Read the Almanac's forecast and decide whether to pay for crews.</li>
+      <li><b>Boomtowns</b> appear after silver strikes in the hills. Connect one within a year or it goes bust.</li>
+    </ul>
+    <p class="hint">How to start: put a <b>Station</b> next to two towns, survey <b>Track</b> between them (click the start, then the end, then Build), and order a <b>Train</b> that stops at both. Space pauses. Keys 1–4 set the speed.</p>
+    <div class="btns"><button class="btn" id="newGame">Take the charter</button><button class="btn ghost" id="contGame" hidden>Continue saved game</button><button class="btn ghost" id="reroll">New map</button></div>
+    <p class="hint num" id="seedLine"></p>
+  </div>
+</div>
+<div class="overlay" id="endOv" hidden><div class="modal" id="endBody"></div></div>
+
+<script>
+(()=>{
+'use strict';
+// ================= utilities =================
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+let rand=Math.random;
+const ri=(a,b)=>a+Math.floor(rand()*(b-a+1));
+const pick=a=>a[Math.floor(rand()*a.length)];
+const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+const W=44,H=30,N=W*H;
+const idx=(x,y)=>y*W+x, X=i=>i%W, Y=i=>(i/W)|0;
+const cheb=(a,b)=>Math.max(Math.abs(X(a)-X(b)),Math.abs(Y(a)-Y(b)));
+const eucl=(a,b)=>Math.hypot(X(a)-X(b),Y(a)-Y(b));
+const inb=(x,y)=>x>=0&&y>=0&&x<W&&y<H;
+const DIRS=[[1,0],[-1,0],[0,1],[0,-1],[1,1],[1,-1],[-1,1],[-1,-1]];
+const money=v=>{const s=v<0?'−':'';v=Math.abs(v);return s+'$'+(v>=1e6?(v/1e6).toFixed(2)+'M':v>=1e4?Math.round(v/1e3)+'k':v>=1000?(v/1e3).toFixed(1)+'k':Math.round(v))};
+const moneyFull=v=>(v<0?'−$':'$')+Math.round(Math.abs(v)).toLocaleString('en-US');
+const fmt=v=>Math.round(v).toLocaleString('en-US');
+const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+class Heap{constructor(){this.a=[]}push(p,v){const a=this.a;a.push([p,v]);let i=a.length-1;while(i>0){const j=(i-1)>>1;if(a[j][0]<=a[i][0])break;[a[i],a[j]]=[a[j],a[i]];i=j}}
+ pop(){const a=this.a,top=a[0],last=a.pop();if(a.length){a[0]=last;let i=0;for(;;){const l=2*i+1,r=l+1;let m=i;if(l<a.length&&a[l][0]<a[m][0])m=l;if(r<a.length&&a[r][0]<a[m][0])m=r;if(m===i)break;[a[i],a[m]]=[a[m],a[i]];i=m}}return top}get size(){return this.a.length}}
+
+// ================= constants =================
+const T={WATER:0,PLAINS:1,FOREST:2,HILLS:3,MOUNT:4};
+const TER_NAME=['Lake','Plains','Forest','Hills','Mountains'];
+const GRADE=['—','Light','Ballasted','Engineered'];
+const SEASONS=['Spring','Summer','Autumn','Winter'];
+const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+const SEVN=[['Mild','Wet','Severe floods'],['Fair','Hot','Drought'],['Fair','Stormy','Early frost'],['Mild','Snowy','Blizzards']];
+const CARGO={
+  pass:{name:'Passengers',rate:1.25,decay:.045,col:'#e6dccb'},
+  mail:{name:'Mail',rate:1.9,decay:.06,col:'#c7b8ec'},
+  grain:{name:'Grain',rate:1.3,decay:.05,col:'#e9c55b'},
+  lumber:{name:'Lumber',rate:1.1,decay:.012,col:'#b47c4b'},
+  coal:{name:'Coal',rate:1.15,decay:.012,col:'#545a62'},
+  ore:{name:'Ore',rate:1.2,decay:.012,col:'#b85a3c'},
+  supplies:{name:'Building supplies',rate:2.0,decay:.02,col:'#8fc1ad'},
+  steel:{name:'Steel',rate:2.4,decay:.015,col:'#a7b5c8'},
+};
+const CARGO_ORDER=Object.keys(CARGO).sort((a,b)=>CARGO[b].rate-CARGO[a].rate);
+const IND={
+  farm:{name:'Homestead farms',out:'grain',base:44,terr:[1],code:'Fm'},
+  logging:{name:'Logging camp',out:'lumber',base:36,terr:[2],code:'Lg'},
+  coal:{name:'Coal mine',out:'coal',base:40,terr:[3,4],code:'Co'},
+  iron:{name:'Iron mine',out:'ore',base:32,terr:[3,4],code:'Fe'},
+  sawmill:{name:'Sawmill',inp:['lumber'],out:'supplies',terr:[1,2],code:'Sw'},
+  steel:{name:'Steelworks',inp:['coal','ore'],out:'steel',terr:[1],code:'St'},
+};
+const MODELS=[
+  {id:'am',name:'4-4-0 American',year:1870,speed:2.7,maxCars:5,power:.1,price:16000,run:4200,col:'#d0503f',note:'Cheap all-rounder. Struggles on grades.'},
+  {id:'co',name:'2-8-0 Consolidation',year:1877,speed:2.3,maxCars:9,power:.55,price:29000,run:6600,col:'#4f7fd6',note:'Slow freight hauler that shrugs off hills.'},
+  {id:'tw',name:'4-6-0 Ten-Wheeler',year:1883,speed:3.6,maxCars:6,power:.3,price:27000,run:6000,col:'#45b376',note:'Quick mixed-traffic engine.'},
+  {id:'pa',name:'4-6-2 Pacific',year:1892,speed:5.0,maxCars:7,power:.35,price:44000,run:8200,col:'#e0ad3e',note:'Express passenger and mail speed.'},
+  {id:'ma',name:'0-6-6-0 Mallet',year:1895,speed:3.0,maxCars:12,power:.85,price:62000,run:10500,col:'#9a5ad0',note:'Articulated giant for mountain freight.'},
+];
+const CAR_PRICE=1400,CAR_RUN=380,CAR_CAP=10;
+const START_DAY_MONTH=2; // March
+const END_MONTHS=(1900-1870)*12-START_DAY_MONTH; // Jan 1900
+const LOAN_STEP=25000,LOAN_MAX=400000;
+const SAVE_KEY='iron-seasons-save-v1';
+const GOALS=[
+  {id:'link',text:'Give 6 towns regular passenger service at once',test:()=>S.towns.filter(t=>!t.ghost&&isConnected(t)).length>=6},
+  {id:'pop',text:'Grow the territory to 40,000 people',test:()=>totalPop()>=40000},
+  {id:'worth',text:'Reach a net worth of $1,500,000',test:()=>netWorth()>=1.5e6},
+  {id:'boom',text:'Keep a boomtown alive past its deadline',test:()=>S.towns.some(t=>t.boomSaved)},
+  {id:'nofreeze',text:'Run a winter with zero snowbound track while serving the mountains',test:()=>S.flags.cleanWinter},
+];
+
+// ================= state =================
+let S=null;
+const UI={tool:'inspect',grade:2,pref:'cheap',tab:'build',speed:0,hover:-1,sel:-1,legs:[],surveyStart:-1,stops:[],dirtyUI:true,tickFrac:0};
+
+function date(day=S.day){const m=START_DAY_MONTH+Math.floor(day/30);return{y:1870+Math.floor(m/12),m:m%12,d:day%30+1,mi:m}}
+function seasonOfMonth(m){return Math.floor(((m-2+12)%12)/3)}
+function dateStr(day=S.day){const d=date(day);return `${MONTHS[d.m]} ${d.d}, ${d.y}`}
+function monthStr(day=S.day){const d=date(day);return `${MONTHS[d.m]} ${d.y}`}
+
+// ================= map generation =================
+function makeNoise(cell){
+  const gw=Math.ceil(W/cell)+2,gh=Math.ceil(H/cell)+2,g=[];for(let i=0;i<gw*gh;i++)g.push(rand());
+  const sm=t=>t*t*(3-2*t);
+  return(x,y)=>{const fx=x/cell,fy=y/cell,x0=Math.floor(fx),y0=Math.floor(fy),tx=sm(fx-x0),ty=sm(fy-y0);
+    const v=(a,b)=>g[b*gw+a];
+    return (v(x0,y0)*(1-tx)+v(x0+1,y0)*tx)*(1-ty)+(v(x0,y0+1)*(1-tx)+v(x0+1,y0+1)*tx)*ty}
+}
+const NAME_A=['Cedar','Elk','Granite','Willow','Red','Bitter','Pine','Bison','Lone','Crow','Antelope','Sage','Raven','Stone','Wolf','Juniper','Hawk','Prairie','Cotton','Badger','Aspen','Mesa','Coyote','Larkspur','Dry','Black','Saddle','Blue'];
+const NAME_B=[' Creek',' Falls',' Bend',' Springs',' Crossing','ville',' Ridge',' Flats',' Fork',' Hollow',' Bluff',' Wells',' Point',' Rock'];
+const BOOM_A=['Silver','Copper','Bonanza','Argent','Lucky','Galena','Eureka','Nugget'];
+const BOOM_B=[' Gulch',' Camp',' Diggings',' Lode'];
+function townName(boom){const used=new Set(S.towns.map(t=>t.name));for(let k=0;k<80;k++){const n=boom?pick(BOOM_A)+pick(BOOM_B):pick(NAME_A)+pick(NAME_B);if(!used.has(n))return n}return 'Town '+S.towns.length}
+
+function newState(seed){
+  rand=mulberry32(seed);
+  S={seed,day:0,tiles:[],rivers:[],towns:[],inds:[],stations:[],trains:[],adj:[],cash:220000,debt:0,
+     season:0,sev:0,next:null,crewsNext:{},crewsNow:{},telegraph:false,autoRepair:true,news:[],
+     yr:{},last:null,hist:[],econ:{factor:1,until:-1,rateAdd:0},flags:{cleanWinter:false},goalsMet:{},
+     nextTrain:1,over:false,neg:0,rngState:seed};
+  for(let i=0;i<N;i++)S.adj.push([]);
+  let tries=0;
+  do{genTerrain();tries++}while(!terrainOK()&&tries<8);
+  placeTowns();placeIndustries();
+  S.sev=0;S.season=0;S.next=rollSeason(1);
+  news(`Charter granted. ${S.towns.length} settlements await a railroad.`,'good');
+  return S;
+}
+function genTerrain(){
+  S.tiles=[];S.rivers=[];
+  const n1=makeNoise(9),n2=makeNoise(4.5),n3=makeNoise(2.2),mo=makeNoise(6),pass=makeNoise(5);
+  const ax=W*(.42+rand()*.16),bx=W*(.36+rand()*.22),wid=2.6+rand()*1.4;
+  const e=new Float64Array(N);
+  for(let y=0;y<H;y++)for(let x=0;x<W;x++){
+    const base=.55*n1(x,y)+.3*n2(x,y)+.15*n3(x,y);
+    const rx=ax+(bx-ax)*(y/(H-1))+Math.sin(y*.35)*1.5,d=x-rx;
+    const ridge=Math.exp(-(d*d)/(2*wid*wid))*(.35+.65*pass(x,y));
+    e[idx(x,y)]=base*.62+ridge*.62;
+  }
+  let mn=1e9,mx=-1e9;for(const v of e){mn=Math.min(mn,v);mx=Math.max(mx,v)}
+  for(let i=0;i<N;i++){
+    const v=(e[i]-mn)/(mx-mn);let t=v<.17?T.WATER:v<.5?T.PLAINS:v<.66?T.HILLS:T.MOUNT;
+    const m=mo(X(i),Y(i));
+    if((t===T.PLAINS&&m>.6)||(t===T.HILLS&&m>.68&&v<.6))t=T.FOREST;
+    S.tiles.push({t,e:v,river:false,flood:false,grade:0,st:-1,town:-1,ind:-1,dmg:0,closed:false,rep:0});
+  }
+  // rivers
+  const srcs=[];for(let i=0;i<N;i++)if(S.tiles[i].e>.72)srcs.push(i);
+  let made=0;
+  for(let k=0;k<40&&made<3;k++){
+    let c=pick(srcs);if(!c&&c!==0)break;
+    if(S.rivers.some(r=>r.some(j=>cheb(j,c)<5)))continue;
+    const path=[c],seen=new Set([c]);let ok=false;
+    for(let s=0;s<90;s++){
+      const x=X(c),y=Y(c);let best=-1,bv=1e9;
+      for(const[dx,dy]of DIRS.slice(0,4)){const nx=x+dx,ny=y+dy;if(!inb(nx,ny)){ok=true;break}const j=idx(nx,ny);if(seen.has(j))continue;const v=S.tiles[j].e+rand()*.03;if(v<bv){bv=v;best=j}}
+      if(ok)break;if(best<0)break;
+      c=best;seen.add(c);path.push(c);
+      if(S.tiles[c].t===T.WATER){ok=true;break}
+      if(S.rivers.some(r=>r.includes(c))){ok=true;break}
+    }
+    if(ok&&path.length>9){S.rivers.push(path);made++}
+  }
+  for(const r of S.rivers)for(const i of r){const tl=S.tiles[i];if(tl.t!==T.WATER){tl.river=true;if(tl.t===T.MOUNT&&tl.e<.75)tl.t=T.HILLS}}
+  for(const r of S.rivers)for(const i of r){const x=X(i),y=Y(i);
+    for(let dy=-2;dy<=2;dy++)for(let dx=-2;dx<=2;dx++){const nx=x+dx,ny=y+dy;if(!inb(nx,ny))continue;const tl=S.tiles[idx(nx,ny)];
+      const lim=(Math.abs(dx)<=1&&Math.abs(dy)<=1)?.47:.4;
+      if(tl.t!==T.WATER&&!tl.river&&tl.e<lim&&tl.t!==T.MOUNT)tl.flood=true}}
+  for(const tl of S.tiles)if(tl.river)tl.flood=true;
+}
+function terrainOK(){
+  let w=0,m=0,h=0;for(const t of S.tiles){if(t.t===T.WATER)w++;if(t.t===T.MOUNT)m++;if(t.t===T.HILLS)h++}
+  return w<N*.16&&m>N*.05&&m<N*.2&&h>N*.08&&S.rivers.length>=2;
+}
+function freeTile(i,r){for(let dy=-r;dy<=r;dy++)for(let dx=-r;dx<=r;dx++){const x=X(i)+dx,y=Y(i)+dy;if(!inb(x,y))continue;const t=S.tiles[idx(x,y)];if(t.town>=0||t.ind>=0)return false}return true}
+function ridgeSide(i){ // which side of mountain mass: compare mountain count left/right on the row
+  const y=Y(i);let sx=0,c=0;for(let x=0;x<W;x++)if(S.tiles[idx(x,y)].t===T.MOUNT){sx+=x;c++}return c?(X(i)<sx/c?0:1):(X(i)<W/2?0:1)}
+function addTown(tile,pop,boom){
+  const id=S.towns.length,offs=[];const rr=mulberry32(tile*7919+id);
+  for(let k=0;k<44;k++){const a=rr()*Math.PI*2,r=Math.sqrt(rr())*(.25+k*.03);offs.push([Math.cos(a)*r,Math.sin(a)*r,.55+rr()*.5])}
+  const t={id,name:townName(boom),tile,pop,ghost:false,offs,recv:{grain:0,supplies:0,steel:0,coal:0},sat:{grain:0,supplies:0,steel:0,coal:0},
+    connDay:-9999,boom:boom?S.day+365:0,boomSaved:false,trend:0,founded:S.day,hist:[pop]};
+  S.towns.push(t);S.tiles[tile].town=id;return t;
+}
+function placeTowns(){
+  const cands=[];for(let i=0;i<N;i++){const t=S.tiles[i],x=X(i),y=Y(i);if(x<2||y<2||x>W-3||y>H-3)continue;if((t.t===T.PLAINS||t.t===T.FOREST)&&!t.river&&t.e<.5)cands.push(i)}
+  const want=[5,5];const sides=[0,0];
+  for(let k=0;k<2000&&S.towns.length<10;k++){
+    const c=pick(cands);const sd=ridgeSide(c);if(sides[sd]>=want[sd])continue;
+    if(S.towns.some(t=>cheb(t.tile,c)<6))continue;
+    let nearRiver=false;for(const r of S.rivers)if(r.some(j=>cheb(j,c)<=2))nearRiver=true;
+    if(!nearRiver&&rand()<.45)continue;
+    sides[sd]++;
+    addTown(c,S.towns.length===0?2300:ri(260,1700),false);
+  }
+}
+function placeInd(type,near){
+  const def=IND[type];const c=[];
+  for(let i=0;i<N;i++){const t=S.tiles[i];const x=X(i),y=Y(i);if(x<1||y<1||x>W-2||y>H-2)continue;
+    if(!def.terr.includes(t.t)||t.river||t.st>=0||t.grade>0)continue;if(!freeTile(i,1))continue;
+    if(S.towns.some(tw=>cheb(tw.tile,i)<2))continue;
+    let w=1;if(near){const d=Math.min(...S.towns.filter(t=>!t.ghost).map(tw=>cheb(tw.tile,i)));w=d<=8?4:d<=12?1:.2}
+    c.push([i,w])}
+  if(!c.length)return null;
+  let tot=c.reduce((s,a)=>s+a[1],0),r=rand()*tot;for(const[i,w]of c){r-=w;if(r<=0)return addInd(type,i)}return addInd(type,c[c.length-1][0]);
+}
+function addInd(type,tile,mult=1){const d={id:S.inds.length,type,tile,mult,closed:false,age:0,prod6:0,moved6:0,pending:{},born:S.day,lastMoved:0};S.inds.push(d);S.tiles[tile].ind=d.id;return d}
+function placeIndustries(){
+  for(let k=0;k<8;k++)placeInd('farm',true);
+  for(let k=0;k<5;k++)placeInd('logging',true);
+  for(let k=0;k<4;k++)placeInd('coal',false);
+  for(let k=0;k<3;k++)placeInd('iron',false);
+  for(let k=0;k<2;k++)placeInd('sawmill',true);
+  placeInd('steel',true);
+}
+
+// ================= terrain economics =================
+function landCost(i){let c=0;for(const t of S.towns){if(t.ghost)continue;const d=cheb(t.tile,i);if(d<=3)c+=t.pop*.9/(d+1)}return c}
+function tileCost(i,g){
+  const tl=S.tiles[i];let c=[0,2000,2900,5200,9000][tl.t];
+  let mult=g===1?.55:g===2?1:2.1;
+  if(tl.river){c=8500;if(g===3)mult=2.4}
+  else if(tl.t===T.MOUNT&&g===3)mult=3;
+  c*=mult;
+  if(tl.flood&&!tl.river)c+=[0,500,1200,2600][g];
+  c+=landCost(i);
+  return Math.round(c/100)*100;
+}
+function floodVuln(tl,g){if(tl.st>=0||!tl.flood)return 0;return tl.river?[0,.75,.3,0][g]:[0,.55,.2,0][g]}
+function snowThresh(tl,g){ // minimum winter severity that closes this track (9 = never)
+  if(tl.st>=0)return 9;
+  if(tl.t===T.MOUNT)return [9,0,1,9][g];
+  if(tl.t===T.HILLS)return [9,1,2,9][g];
+  return 9;
+}
+function tileFactor(i,model){
+  const tl=S.tiles[i];if(tl.st>=0)return 1;const g=tl.grade||2;let f=1;
+  if(tl.t===T.HILLS)f=[0,.68,.8,.95][g];else if(tl.t===T.MOUNT)f=[0,.42,.58,.92][g];
+  if(tl.river)f*=g===1?.75:.92;
+  if(g===1){f*=.85;if(S.season===1&&S.sev>=1)f*=S.sev===2?.65:.8}
+  if(model)f=1-(1-f)*(1-model.power);
+  return f;
+}
+const blocked=i=>S.tiles[i].dmg!==0||S.tiles[i].closed;
+function hasTrack(i){return S.tiles[i].grade>0||S.tiles[i].st>=0}
+function addEdge(a,b){if(!S.adj[a].includes(b))S.adj[a].push(b);if(!S.adj[b].includes(a))S.adj[b].push(a)}
+
+// ================= surveying (A*) =================
+function survey(from,to,g,pref){
+  const gs=new Float64Array(N).fill(Infinity),came=new Int32Array(N).fill(-1),done=new Uint8Array(N);
+  const h=new Heap();gs[from]=0;h.push(0,from);
+  const pass=i=>{const t=S.tiles[i];return t.t!==T.WATER&&(t.ind<0)};
+  if(!pass(to)||!pass(from))return null;
+  while(h.size){const[,c]=h.pop();if(done[c])continue;done[c]=1;if(c===to)break;
+    const cx=X(c),cy=Y(c);
+    for(const[dx,dy]of DIRS){const nx=cx+dx,ny=cy+dy;if(!inb(nx,ny))continue;const j=idx(nx,ny);if(done[j]||!pass(j))continue;
+      const diag=dx&&dy;if(diag&&(!pass(idx(cx+dx,cy))||!pass(idx(cx,cy+dy))))continue;
+      const tl=S.tiles[j];let sc;
+      if(hasTrack(j))sc=150;
+      else{sc=tileCost(j,g);
+        if(pref==='safe')sc+=floodVuln(tl,g)*9000+(snowThresh(tl,g)<=1?7000:snowThresh(tl,g)===2?3000:0);
+        if(pref==='fast')sc+=(1/tileFactorFor(tl,g)-1)*7000;
+        sc+=Math.abs(tl.e-S.tiles[c].e)*14000*(g===3?.35:1);
+      }
+      const ng=gs[c]+sc*(diag?1.414:1);
+      if(ng<gs[j]){gs[j]=ng;came[j]=c;h.push(ng+cheb(j,to)*150,j)}}}
+  if(!done[to])return null;
+  const p=[];let c=to;while(c!==-1){p.push(c);if(c===from)break;c=came[c]}return p.reverse();
+}
+function tileFactorFor(tl,g){let f=1;if(tl.t===T.HILLS)f=[0,.68,.8,.95][g];else if(tl.t===T.MOUNT)f=[0,.42,.58,.92][g];if(tl.river)f*=g===1?.75:.92;if(g===1)f*=.85;return f}
+function legsTiles(){const out=[];for(const L of UI.legs){for(let k=0;k<L.length;k++){if(out.length&&k===0&&out[out.length-1]===L[0])continue;out.push(L[k])}}return out}
+function planSummary(){
+  const g=UI.grade;let cost=0,newT=0,bridges=0,flood=0,snow=[0,0,0],tunnels=0;const seen=new Set();
+  for(const L of UI.legs)for(const i of L){if(seen.has(i))continue;seen.add(i);const tl=S.tiles[i];if(hasTrack(i))continue;
+    newT++;cost+=tileCost(i,g);if(tl.river)bridges++;if(floodVuln(tl,g)>0)flood++;const s=snowThresh(tl,g);if(s<=2)snow[s]++;if(tl.t===T.MOUNT&&g===3)tunnels++}
+  return{cost,newT,bridges,flood,snow,tunnels,len:legsTiles().length};
+}
+function commitTrack(){
+  const sm=planSummary();if(!sm.newT&&legsTiles().length<2)return;
+  if(S.cash<sm.cost){news(`Not enough cash: that survey costs ${moneyFull(sm.cost)}.`,'bad');return}
+  spend('construction',sm.cost);
+  for(const L of UI.legs){for(let k=0;k<L.length;k++){const i=L[k];const tl=S.tiles[i];if(!hasTrack(i))tl.grade=UI.grade;if(k)addEdge(L[k-1],i)}}
+  news(`Laid ${sm.newT} tiles of ${GRADE[UI.grade].toLowerCase()} track for ${moneyFull(sm.cost)}.`);
+  UI.legs=[];UI.surveyStart=-1;graphChanged();
+}
+
+// ================= stations =================
+function stationCost(i){return 6000+Math.round(landCost(i)*2/100)*100}
+function buildStation(i){
+  const tl=S.tiles[i];
+  if(tl.t===T.WATER||tl.ind>=0)return news('Stations need dry land that isn’t an industry site.','bad');
+  if(tl.st>=0)return;
+  if(S.stations.some(s=>!s.dead&&cheb(s.tile,i)<3))return news('Too close to another station (keep 3 tiles apart).','bad');
+  const c=stationCost(i);if(S.cash<c)return news(`Need ${moneyFull(c)} for a station there.`,'bad');
+  spend('construction',c);
+  let near=null,bd=99;for(const t of S.towns){if(t.ghost)continue;const d=cheb(t.tile,i);if(d<bd){bd=d;near=t}}
+  let name=near&&bd<=3?near.name:(near&&bd<=8?near.name+' Junction':TER_NAME[tl.t]+' Siding');
+  if(S.stations.some(s=>s.name===name))name+=' '+(S.stations.length+1);
+  const st={id:S.stations.length,name,tile:i,stock:{},lastPick:-9999,lastSpeed:2.5,rating:0,wants:[],handled6:0,dead:false};
+  S.stations.push(st);tl.st=st.id;
+  // auto-connect to adjacent track
+  for(const[dx,dy]of DIRS){const x=X(i)+dx,y=Y(i)+dy;if(inb(x,y)&&hasTrack(idx(x,y))&&S.tiles[idx(x,y)].grade>0)addEdge(i,idx(x,y))}
+  news(`${name} station opened (${moneyFull(c)}).`);graphChanged();
+}
+function catchTowns(st){return S.towns.filter(t=>!t.ghost&&cheb(t.tile,st.tile)<=3)}
+function catchInds(st){return S.inds.filter(d=>!d.closed&&cheb(d.tile,st.tile)<=2)}
+function accepts(st){
+  const a=new Set();
+  for(const t of catchTowns(st)){a.add('pass');a.add('mail');a.add('grain');a.add('supplies');a.add('coal');if(t.pop>=1000)a.add('steel')}
+  for(const d of catchInds(st))for(const c of IND[d.type].inp||[])a.add(c);
+  return a;
+}
+function produces(st){const a=new Set();if(catchTowns(st).length){a.add('pass');a.add('mail')}for(const d of catchInds(st))a.add(IND[d.type].out);return a}
+function recomputeWants(){
+  const acc=S.stations.map(s=>s.dead?new Set():accepts(s));
+  for(const s of S.stations)s.wants=[];
+  for(const tr of S.trains){const ids=[...new Set(tr.stops)];for(const a of ids){const w=new Set(S.stations[a].wants);for(const b of ids)if(b!==a)for(const c of acc[b])w.add(c);S.stations[a].wants=[...w]}}
+}
+
+// ================= trains =================
+function unlocked(){const y=date().y;return MODELS.filter(m=>m.year<=y)}
+function trainCost(m,cars){return m.price+cars*CAR_PRICE}
+function buyTrain(m,cars,stops){
+  const c=trainCost(m,cars);if(S.cash<c)return news(`A ${m.name} with ${cars} cars costs ${moneyFull(c)}.`,'bad');
+  if(new Set(stops).size<2)return news('A train needs at least two different stations.','bad');
+  spend('equipment',c);
+  const tr={id:S.nextTrain++,model:m.id,cars,stops:[...stops],si:0,state:'load',timer:1,path:[S.stations[stops[0]].tile],k:0,frac:0,sPrev:0,sNow:0,pathPrev:null,
+    cargo:[],profitY:0,profitL:null,bought:S.day,note:'',value:c};
+  S.trains.push(tr);recomputeWants();
+  news(`No. ${tr.id} (${m.name}) dispatched from ${S.stations[stops[0]].name}.`);
+}
+function sellTrain(tr){const v=trainValue(tr);earn('sales',v);S.trains=S.trains.filter(t=>t!==tr);recomputeWants();news(`No. ${tr.id} sold for ${moneyFull(v)}.`)}
+function trainValue(tr){const age=(S.day-tr.bought)/360;return Math.round(tr.value*Math.max(.2,.65-age*.03))}
+const modelOf=tr=>MODELS.find(m=>m.id===tr.model);
+function trainTile(tr){return tr.path[Math.min(tr.k,tr.path.length-1)]}
+function routeTrain(from,to,avoid){
+  if(from===to)return[from];
+  const d=new Float64Array(N).fill(Infinity),came=new Int32Array(N).fill(-1);const h=new Heap();d[from]=0;h.push(0,from);
+  while(h.size){const[dc,c]=h.pop();if(dc>d[c])continue;if(c===to)break;
+    for(const j of S.adj[c]){if(avoid&&blocked(j))continue;const len=(X(j)!==X(c)&&Y(j)!==Y(c))?1.414:1;const nd=dc+len/tileFactor(j);if(nd<d[j]){d[j]=nd;came[j]=c;h.push(nd,j)}}}
+  if(d[to]===Infinity)return null;const p=[];let c=to;while(c!==-1){p.push(c);if(c===from)break;c=came[c]}return p.reverse();
+}
+function planLeg(tr){
+  const here=trainTile(tr),dest=S.stations[tr.stops[tr.si]].tile;
+  let p=routeTrain(here,dest,true);let note='';
+  if(!p){p=routeTrain(here,dest,false);if(p)note='held';}
+  tr.pathPrev=null;
+  if(!p){tr.path=[here];tr.k=0;tr.frac=0;tr.state='lost';tr.note='No track to '+S.stations[tr.stops[tr.si]].name;return}
+  tr.path=p;tr.k=0;tr.frac=0;tr.sPrev=tr.sNow=0;tr.state='move';tr.note=note;
+}
+function graphChanged(){for(const tr of S.trains){if(tr.state==='move'||tr.state==='lost'||tr.state==='wait'){if(tr.frac>0&&tr.k+1<tr.path.length&&!hasTrack(tr.path[tr.k+1])){tr.frac=0}planLeg(tr)}}recomputeWants();UI.dirtyUI=true}
+function stepTrain(tr){
+  const m=modelOf(tr);
+  if(tr.state==='load'){tr.timer--;if(tr.timer<=0){tr.si=(tr.si+1)%tr.stops.length;planLeg(tr)}return}
+  if(tr.state==='lost'){if(S.day%5===0)planLeg(tr);return}
+  if(tr.state==='wait'){planLeg(tr);if(tr.state!=='move')return;
+    if(tr.k+1<tr.path.length&&blocked(tr.path[tr.k+1])){tr.state='wait';return}}
+  let mv=m.speed;tr.sPrev=tr.k+tr.frac;tr.pathPrev=tr.path;
+  while(mv>0){
+    if(tr.k>=tr.path.length-1){arrive(tr);break}
+    const nx=tr.path[tr.k+1];
+    if(blocked(nx)){
+      // try a detour
+      const alt=routeTrain(tr.path[tr.k],S.stations[tr.stops[tr.si]].tile,true);
+      if(alt&&alt.length>1&&!blocked(alt[1])){tr.path=alt;tr.k=0;tr.frac=0;tr.pathPrev=null;continue}
+      tr.state='wait';const tl=S.tiles[nx];tr.note=tl.closed?'Snowbound':'Held at a washout';tr.frac=0;break}
+    const cur=tr.path[tr.k];const len=(X(nx)!==X(cur)&&Y(nx)!==Y(cur))?1.414:1;const el=len/tileFactor(nx,m);
+    const rem=(1-tr.frac)*el;
+    if(mv>=rem){mv-=rem;tr.k++;tr.frac=0}else{tr.frac+=mv/el;mv=0}
+  }
+  tr.sNow=tr.k+tr.frac;
+  if(tr.state==='move'&&tr.note!=='held')tr.note='';
+}
+function deliverTo(st,c,amt){
+  const inds=catchInds(st).filter(d=>(IND[d.type].inp||[]).includes(c));
+  if(inds.length){const d=inds[0];d.pending[c]=(d.pending[c]||0)+amt;return}
+  const tws=catchTowns(st);if(!tws.length)return;
+  // nearest town gets it
+  tws.sort((a,b)=>cheb(a.tile,st.tile)-cheb(b.tile,st.tile));const t=tws[0];
+  if(c in t.recv)t.recv[c]+=amt;
+  if(c==='pass'||c==='mail')t.connDay=S.day;
+}
+function arrive(tr){
+  const st=S.stations[tr.stops[tr.si]],m=modelOf(tr);
+  tr.state='load';tr.timer=1;tr.note='';
+  let rev=0;
+  tr.cargo=tr.cargo.filter(c=>{if(c.to!==st.id)return true;
+    const dist=Math.max(1,eucl(S.stations[c.from].tile,st.tile));const days=S.day-c.day;const fast=1+dist/2.2;
+    const tf=Math.max(.25,1-Math.max(0,days-fast)*CARGO[c.type].decay*.6);
+    const pay=c.amt*CARGO[c.type].rate*dist*tf*S.econ.factor;rev+=pay;
+    S.yr.rev[c.type]=(S.yr.rev[c.type]||0)+pay;deliverTo(st,c.type,c.amt);st.handled6+=c.amt;return false});
+  if(rev){S.cash+=rev;tr.profitY+=rev}
+  // load
+  const acc=tr.stops.map(id=>accepts(S.stations[id]));
+  let room=tr.cars*CAR_CAP-tr.cargo.reduce((s,c)=>s+c.amt,0);
+  for(const type of CARGO_ORDER){if(room<1)break;const have=Math.floor(st.stock[type]||0);if(have<1)continue;
+    let to=-1;for(let k=1;k<tr.stops.length;k++){const j=(tr.si+k)%tr.stops.length;if(tr.stops[j]!==st.id&&acc[j].has(type)){to=tr.stops[j];break}}
+    if(to<0)continue;const amt=Math.min(have,room);st.stock[type]-=amt;room-=amt;st.handled6+=amt;
+    tr.cargo.push({type,amt,from:st.id,to,day:S.day});
+    if(type==='pass'||type==='mail')for(const t of catchTowns(st))t.connDay=S.day;
+  }
+  st.lastPick=S.day;st.lastSpeed=m.speed;
+}
+
+// ================= production =================
+function seasonal(kind){
+  const s=S.season,v=S.sev;
+  if(kind==='farm')return[.6,v===2?.45:1,v===2?1.05:1.8,.15][s];
+  if(kind==='logging')return[.8,1,1,1.35][s];
+  if(kind==='coal'||kind==='iron')return s===3&&v===2?.75:1;
+  if(kind==='pass')return s===3?.8:1;
+  return 1;
+}
+function dailyProduction(){
+  // ratings
+  for(const st of S.stations){if(st.dead){st.rating=0;continue}if(!st.wants.length||st.lastPick<-999){st.rating=st.wants.length?.35:0;continue}
+    const since=S.day-st.lastPick;st.rating=clamp(.3+.55*Math.max(0,1-since/45)+.1*st.lastSpeed/5,0,.95)}
+  const give=(tile,r,type,amt)=>{let sts=S.stations.filter(s=>!s.dead&&s.rating>0&&cheb(s.tile,tile)<=r&&s.wants.includes(type));if(!sts.length)return 0;
+    let moved=0;for(const s of sts){const a=amt/sts.length*s.rating;s.stock[type]=Math.min(400,(s.stock[type]||0)+a);moved+=a}return moved};
+  for(const t of S.towns){if(t.ghost)continue;const f=seasonal('pass');give(t.tile,3,'pass',t.pop/40/30*f);give(t.tile,3,'mail',t.pop/110/30)}
+  for(const d of S.inds){if(d.closed)continue;const def=IND[d.type];let amt;
+    if(def.inp){ // processor
+      if(d.type==='sawmill'){const p=d.pending.lumber||0;amt=Math.min(p,Math.max(1,p*.12));d.pending.lumber=p-amt}
+      else{const c=d.pending.coal||0,o=d.pending.ore||0;amt=Math.min(c,o,Math.max(1,Math.min(c,o)*.12));d.pending.coal=c-amt;d.pending.ore=o-amt}
+      amt*=1.0;
+    }else amt=def.base*d.mult*seasonal(d.type)/30;
+    if(amt<=0)continue;d.prod6+=amt;const mv=give(d.tile,2,def.out,amt);d.moved6+=mv;
+  }
+  for(const st of S.stations)for(const k in st.stock)st.stock[k]*=1-CARGO[k].decay/6;
+}
+
+// ================= seasons & weather =================
+const SEV_DIST=[[.35,.4,.25],[.45,.35,.2],[.5,.35,.15],[.25,.45,.3]];
+function rollSeason(season){
+  const d=SEV_DIST[season];let r=rand(),sev=r<d[0]?0:r<d[0]+d[1]?1:2;
+  const acc=S.telegraph?.88:.62;let fc=sev;if(rand()>acc){fc=pick([0,1,2].filter(v=>v!==sev))}
+  return{season,sev,fc,acc};
+}
+function startSeason(){
+  const n=S.next;S.season=n.season;S.sev=n.sev;S.crewsNow=S.crewsNext;S.crewsNext={};
+  const name=SEVN[S.season][S.sev];
+  news(`${SEASONS[S.season]} arrives: ${name.toLowerCase()}. The Almanac had called it “${SEVN[n.season][n.fc].toLowerCase()}”.`,S.sev===2?'bad':S.sev===1?'warn':'');
+  // clear snow
+  if(S.season===0){let c=0;for(const t of S.tiles)if(t.closed){t.closed=false;c++}if(c)news(`The thaw reopens ${c} snowbound track tiles.`,'good')}
+  if(S.season===3){
+    let c=0,mtnServed=false;const crew=S.crewsNow.snow?1:0;
+    for(let i=0;i<N;i++){const t=S.tiles[i];if(t.grade>0){if(t.t===T.MOUNT||t.t===T.HILLS)mtnServed=true;if(S.sev>=snowThresh(t,t.grade)+crew){t.closed=true;c++}}}
+    if(c)news(`Snow closes ${c} track tiles in the high country until spring.`,'bad');
+    S.flags.winterWatch=mtnServed&&c===0;
+  }
+  if(S.season===0&&S.flags.winterWatch){S.flags.cleanWinter=true}
+  S.next=rollSeason((S.season+1)%4);
+}
+function floodCheck(){
+  if(S.season!==0)return;
+  const pm=[.04,.22,.5][S.sev]*(S.crewsNow.levee?.45:1);let c=0;
+  for(let i=0;i<N;i++){const t=S.tiles[i];if(t.grade>0&&t.dmg===0){const v=floodVuln(t,t.grade);if(v>0&&rand()<v*pm){t.dmg=-1;c++}}}
+  if(c){news(`Floodwater washes out ${c} track tile${c>1?'s':''}.`,'bad');autoRepair();graphChanged()}
+}
+function repairCost(i){return Math.round(tileCost(i,S.tiles[i].grade)*.35/100)*100}
+function repair(i){const c=repairCost(i);if(S.cash<c)return false;spend('repairs',c);S.tiles[i].dmg=ri(8,16);return true}
+function autoRepair(){if(!S.autoRepair)return;for(let i=0;i<N;i++)if(S.tiles[i].dmg===-1)repair(i)}
+
+// ================= frontier life =================
+function isConnected(t){return S.day-t.connDay<75}
+function totalPop(){return S.towns.reduce((s,t)=>s+(t.ghost?0:t.pop),0)}
+function monthlyTowns(){
+  const winter=S.season===3;let refugees=0;
+  for(const t of S.towns){if(t.ghost)continue;
+    const conn=isConnected(t),p=t.pop;
+    const need={grain:p/40,supplies:p/80,steel:p>=1000?p/160:0,coal:winter?p/45:p/220};
+    for(const k in need){const s=need[k]>0?Math.min(1,t.recv[k]/need[k]):0;t.sat[k]=t.sat[k]*.4+s*.6;t.recv[k]=0}
+    let g=conn?.003:-.007;
+    g+=.006*t.sat.grain+.005*t.sat.supplies+(need.steel?.004*t.sat.steel:0);
+    if(winter)g-=.006*S.sev*(1-t.sat.coal)*(conn?1:1.3);
+    if(S.season===1&&S.sev===2&&t.sat.grain<.6)g-=.003;
+    if(t.boom){
+      if(conn&&!t.boomSaved&&S.day<=t.boom){t.boomSaved=true;t.boom=S.day+720;news(`${t.name} is linked! The boom is on.`,'good')}
+      if(t.boomSaved&&S.day<t.boom)g+=.025;
+      else if(!t.boomSaved&&S.day>t.boom)g-=.08;
+      else if(!t.boomSaved)g+=.01;
+    }
+    if(g>0)g*=Math.max(0,1-p/16000);
+    const np=Math.max(0,p*(1+g));if(np<p)refugees+=(p-np)*.5;
+    t.trend=g;t.pop=np;t.hist.push(np);if(t.hist.length>36)t.hist.shift();
+    if(t.pop<70){t.ghost=true;news(`${t.name} has been abandoned.`,'bad');for(const d of S.inds)if(!d.closed&&cheb(d.tile,t.tile)<=2&&!IND[d.type].inp&&rand()<.5)closeInd(d)}
+  }
+  const dest=S.towns.filter(t=>!t.ghost&&isConnected(t));const tot=dest.reduce((s,t)=>s+t.pop,0);
+  if(tot>0&&refugees>0)for(const t of dest)t.pop+=refugees*t.pop/tot;
+}
+function closeInd(d){d.closed=true;news(`${IND[d.type].name} near ${nearName(d.tile)} has shut down.`,'bad')}
+function nearName(i){let b=null,bd=99;for(const t of S.towns){const d=cheb(t.tile,i);if(d<bd){bd=d;b=t}}return b?b.name:'the frontier'}
+function halfYear(){
+  for(const d of S.inds){if(d.closed)continue;d.age+=180;const f=d.prod6>0?d.moved6/d.prod6:0;const def=IND[d.type];
+    if(!def.inp){
+      if(f>.55&&rand()<.6&&d.mult<4){d.mult=Math.min(4,d.mult*1.25);news(`${def.name} near ${nearName(d.tile)} expands (output ×${d.mult.toFixed(2)}).`,'good')}
+      else if(f<.08&&d.age>=720&&rand()<.35){d.mult*=.75;if(d.mult<.4)closeInd(d);else news(`${def.name} near ${nearName(d.tile)} is cutting back. Nobody ships its ${CARGO[def.out].name.toLowerCase()}.`,'warn')}
+    }
+    d.prod6=0;d.moved6=0}
+  // whistle-stops
+  for(const st of S.stations){if(st.dead)continue;if(st.handled6>=140&&!S.towns.some(t=>!t.ghost&&cheb(t.tile,st.tile)<=4)){
+      const c=[];for(const[dx,dy]of DIRS){const x=X(st.tile)+dx,y=Y(st.tile)+dy;if(!inb(x,y))continue;const j=idx(x,y),tl=S.tiles[j];if(tl.t!==T.WATER&&tl.t!==T.MOUNT&&tl.ind<0&&tl.st<0&&tl.town<0&&!tl.river)c.push(j)}
+      if(c.length){const t=addTown(pick(c),140,false);t.connDay=S.day;news(`Settlers found ${t.name} beside the busy ${st.name} depot.`,'good')}}
+    st.handled6=0}
+}
+function quarterly(){
+  if(rand()<.75){
+    const types=['farm','farm','logging','coal','iron','farm','logging'];if(date().y>=1878&&rand()<.25)types.push(pick(['sawmill','steel']));
+    const type=pick(types);const def=IND[type];
+    // weight by proximity to track
+    const dist=new Int16Array(N).fill(99);const q=[];for(let i=0;i<N;i++)if(hasTrack(i)){dist[i]=0;q.push(i)}
+    for(let h=0;h<q.length;h++){const c=q[h];if(dist[c]>=6)continue;for(const[dx,dy]of DIRS){const x=X(c)+dx,y=Y(c)+dy;if(!inb(x,y))continue;const j=idx(x,y);if(dist[j]>dist[c]+1){dist[j]=dist[c]+1;q.push(j)}}}
+    const c=[];for(let i=0;i<N;i++){const t=S.tiles[i];if(!def.terr.includes(t.t)||t.river||hasTrack(i)||!freeTile(i,1))continue;if(X(i)<1||Y(i)<1||X(i)>W-2||Y(i)>H-2)continue;
+      if(def.inp&&!S.towns.some(tw=>!tw.ghost&&cheb(tw.tile,i)<=6))continue;
+      c.push([i,dist[i]>=2&&dist[i]<=4?8:dist[i]<=6?2:.4])}
+    if(c.length){let tot=c.reduce((s,a)=>s+a[1],0),r=rand()*tot,sel=c[0][0];for(const[i,w]of c){r-=w;if(r<=0){sel=i;break}}
+      const d=addInd(type,sel);news(`A new ${def.name.toLowerCase()} opens near ${nearName(sel)}.`,dist[sel]<=4?'good':'')}
+  }
+}
+function boomCheck(){
+  if(date().y<1872||rand()>1/22)return;
+  const c=[];for(let i=0;i<N;i++){const t=S.tiles[i];if((t.t===T.HILLS||t.t===T.MOUNT)&&!t.river&&t.ind<0&&t.st<0&&!hasTrack(i)&&freeTile(i,1)&&!S.towns.some(tw=>!tw.ghost&&cheb(tw.tile,i)<6)&&X(i)>1&&Y(i)>1&&X(i)<W-2&&Y(i)<H-2)c.push(i)}
+  if(!c.length)return;const tile=pick(c);const t=addTown(tile,480,true);
+  // rich vein adjacent
+  const adj=DIRS.map(([dx,dy])=>idx(X(tile)+dx*2,Y(tile)+dy*2)).filter(j=>j>=0&&j<N&&S.tiles[j].t!==T.WATER&&S.tiles[j].ind<0&&S.tiles[j].town<0&&!S.tiles[j].river&&cheb(j,tile)===2);
+  if(adj.length)addInd(pick(['iron','coal','iron']),pick(adj),2.2);
+  news(`STRIKE! A rich lode at ${t.name}. Prospectors pour in. Give it rail service by ${monthStr(t.boom)} or it goes bust.`,'warn');
+}
+function econEvents(){
+  const d=date();
+  if((d.y===1873&&d.m===8)||(d.y===1893&&d.m===4)){S.econ={factor:.75,until:S.day+450,rateAdd:.03};news(`Panic of ${d.y}! Banks fail across the East. Freight rates fall by a quarter and credit tightens.`,'bad')}
+  if(S.econ.until>0&&S.day>=S.econ.until){S.econ={factor:1,until:-1,rateAdd:0};news('Markets recover. Rates return to normal.','good')}
+}
+
+// ================= finance =================
+function newYearBook(){return{rev:{},construction:0,equipment:0,running:0,maint:0,interest:0,repairs:0,crews:0,sales:0,other:0}}
+function spend(cat,v){S.cash-=v;S.yr[cat]=(S.yr[cat]||0)+v;UI.dirtyUI=true}
+function earn(cat,v){S.cash+=v;S.yr[cat]=(S.yr[cat]||0)+v;UI.dirtyUI=true}
+function trackValue(){let v=0;for(let i=0;i<N;i++){const t=S.tiles[i];if(t.grade>0)v+=[0,1100,2900,6500][t.grade]*(t.t>=3?1.6:1)}return v}
+function netWorth(){return S.cash-S.debt+trackValue()*.5+S.trains.reduce((s,t)=>s+trainValue(t),0)+S.stations.filter(s=>!s.dead).length*3000}
+function interestRate(){return .065+S.econ.rateAdd}
+function monthlyFinance(){
+  let maint=0;for(let i=0;i<N;i++){const t=S.tiles[i];if(t.grade>0)maint+=[0,80,170,280][t.grade]*(t.river?2:1)}
+  maint+=S.stations.filter(s=>!s.dead).length*1500;
+  spend('maint',maint/12);
+  let run=0;for(const tr of S.trains){const m=modelOf(tr);run+=m.run+tr.cars*CAR_RUN;tr.profitY-=(m.run+tr.cars*CAR_RUN)/12}
+  spend('running',run/12);
+  if(S.debt>0)spend('interest',S.debt*interestRate()/12);
+}
+
+// ================= main tick =================
+function tick(){
+  if(S.over)return;
+  S.day++;
+  const d=date();
+  if(S.day%30===0)onMonth(d);
+  dailyProduction();
+  for(const tr of S.trains)stepTrain(tr);
+  for(let i=0;i<N;i++){const t=S.tiles[i];if(t.dmg>0){t.dmg--;if(t.dmg===0){graphChanged()}}}
+  if(S.day%7===0&&S.autoRepair&&S.tiles.some(t=>t.dmg===-1))autoRepair();
+  UI.dirtyUI=true;
+}
+function onMonth(d){
+  monthlyFinance();
+  monthlyTowns();
+  econEvents();
+  if(d.m%3===2)startSeason();
+  floodCheck();
+  boomCheck();
+  if(d.mi%3===0)quarterly();
+  if(d.mi%6===0)halfYear();
+  S.hist.push({nw:netWorth(),pop:totalPop(),cash:S.cash});if(S.hist.length>400)S.hist.shift();
+  if(d.m===0)yearEnd(d);
+  for(const g of GOALS)if(!S.goalsMet[g.id]&&g.test()){S.goalsMet[g.id]=monthStr();news(`Charter goal met: ${g.text}.`,'good')}
+  // bankruptcy
+  if(S.cash<0){S.neg++;if(S.neg===1)news('The treasury is overdrawn. Borrow or sell assets within 3 months or the receivers take over.','bad');if(S.neg>=4)return endGame(true)}else S.neg=0;
+  if(d.mi>=END_MONTHS+START_DAY_MONTH)return endGame(false);
+  saveGame();
+}
+function yearEnd(d){
+  const y=S.yr;const rev=Object.values(y.rev).reduce((s,v)=>s+v,0);
+  const ops=y.running+y.maint+y.interest+y.repairs+y.crews;
+  news(`Books closed for ${d.y-1}: revenue ${moneyFull(rev)}, operating costs ${moneyFull(ops)}, profit ${moneyFull(rev-ops)}.`,rev-ops>=0?'good':'bad');
+  S.last=y;S.yr=newYearBook();for(const tr of S.trains){tr.profitL=tr.profitY;tr.profitY=0}
+  const nm=MODELS.find(m=>m.year===d.y);if(nm)news(`New locomotive available: ${nm.name}. ${nm.note}`,'good');
+}
+function score(){return Math.round(netWorth()/1000+totalPop()/40+Object.keys(S.goalsMet).length*150)}
+function rank(sc){return sc>=4200?'Transcontinental legend':sc>=2800?'Trunk-line baron':sc>=1700?'Regional railroad':sc>=900?'Short-line operator':'Bankrupt dreamer'}
+function endGame(bankrupt){
+  S.over=true;UI.speed=0;setSpeed(0);try{localStorage.removeItem(SAVE_KEY)}catch(e){}
+  const sc=bankrupt?0:score();const alive=S.towns.filter(t=>!t.ghost).length,ghosts=S.towns.filter(t=>t.ghost).length;
+  document.getElementById('endBody').innerHTML=`<div class="eyebrow">${bankrupt?'Receivership · '+monthStr():'January 1, 1900'}</div>
+  <h2>${bankrupt?'The receivers take the keys':rank(sc)}</h2>
+  <p>${bankrupt?'Your creditors seized the line after four months of an overdrawn treasury.':'Thirty years of iron and weather are behind you. Here is what you leave the territory.'}</p>
+  <table class="t num"><tbody>
+  <tr><td>Net worth</td><td class="r">${moneyFull(netWorth())}</td></tr>
+  <tr><td>Territory population</td><td class="r">${fmt(totalPop())}</td></tr>
+  <tr><td>Towns alive / abandoned</td><td class="r">${alive} / ${ghosts}</td></tr>
+  <tr><td>Charter goals met</td><td class="r">${Object.keys(S.goalsMet).length} of ${GOALS.length}</td></tr>
+  <tr><td><b>Score</b></td><td class="r"><b>${fmt(sc)}</b></td></tr></tbody></table>
+  <p class="hint">Score = net worth ÷ 1,000 + population ÷ 40 + 150 per goal. Ranks: 900 short line, 1,700 regional, 2,800 trunk line, 4,200 legend.</p>
+  <div class="btns"><button class="btn" id="again">New charter</button><button class="btn ghost" id="lookMap">Look at the map</button></div>`;
+  document.getElementById('endOv').hidden=false;
+  document.getElementById('again').onclick=()=>{document.getElementById('endOv').hidden=true;start(Math.floor(Math.random()*1e9))};
+  document.getElementById('lookMap').onclick=()=>{document.getElementById('endOv').hidden=true};
+}
+function news(text,kind=''){if(!S)return;S.news.unshift({d:S.day,text,kind});if(S.news.length>60)S.news.pop();UI.dirtyUI=true;UI.newsDirty=true}
+
+// ================= save/load =================
+function saveGame(){try{localStorage.setItem(SAVE_KEY,JSON.stringify(S))}catch(e){}}
+function loadGame(){try{const s=localStorage.getItem(SAVE_KEY);if(!s)return null;const o=JSON.parse(s);if(!o||!o.tiles||o.over)return null;return o}catch(e){return null}}
+
+// ================= rendering =================
+const cv=document.getElementById('map'),ctx=cv.getContext('2d');let TS=20,base=null,baseKey='';
+function resize(){const r=cv.parentElement.getBoundingClientRect();const dpr=Math.min(2,window.devicePixelRatio||1);
+  TS=Math.max(6,r.width/W);cv.width=Math.round(W*TS*dpr);cv.height=Math.round(H*TS*dpr);cv.style.height=(H*TS)+'px';ctx.setTransform(dpr,0,0,dpr,0,0);baseKey=''}
+const TCOL=['#557c97','#c9c7a0','#6e8a5c','#a6977a','#827a74'];
+function shade(hex,amt){const n=parseInt(hex.slice(1),16);let r=n>>16,g=n>>8&255,b=n&255;const f=v=>clamp(Math.round(v+amt*255),0,255);return`rgb(${f(r)},${f(g)},${f(b)})`}
+function mix(hex,hex2,t){const a=parseInt(hex.slice(1),16),b=parseInt(hex2.slice(1),16);const c=(s)=>Math.round(((a>>s)&255)*(1-t)+((b>>s)&255)*t);return`rgb(${c(16)},${c(8)},${c(0)})`}
+function drawBase(){
+  const key=`${TS}|${S.season}|${S.sev}|${S.seed}`;if(key===baseKey&&base)return;baseKey=key;
+  const dpr=Math.min(2,window.devicePixelRatio||1);base=document.createElement('canvas');base.width=cv.width;base.height=cv.height;const b=base.getContext('2d');b.setTransform(dpr,0,0,dpr,0,0);
+  const rr=mulberry32(S.seed+11);
+  for(let i=0;i<N;i++){const t=S.tiles[i],x=X(i)*TS,y=Y(i)*TS;let col=TCOL[t.t];
+    if(S.season===2&&t.t===T.FOREST)col=mix(col,'#b07a36',.45);
+    if(S.season===1&&S.sev===2&&t.t===T.PLAINS)col=mix(col,'#d9c27a',.4);
+    if(S.season===3&&(t.t===T.MOUNT||(t.t===T.HILLS&&S.sev>=1)||(S.sev===2&&t.t!==T.WATER)))col=mix(col,'#e8eef3',t.t===T.MOUNT?.7:t.t===T.HILLS?.55:.35);
+    if(S.season===3&&S.sev===0&&t.t===T.HILLS)col=mix(col,'#e8eef3',.2);
+    // hillshade
+    const ex=X(i)>0?S.tiles[i-1].e:t.e,ey=Y(i)>0?S.tiles[i-W].e:t.e;const sh=clamp((t.e-ex+t.e-ey)*1.6,-.12,.12);
+    b.fillStyle=t.t===T.WATER?col:shade(col.startsWith('#')?col:rgbToHex(col),sh+(rr()-.5)*.03);b.fillRect(x,y,TS+.5,TS+.5);
+    if(t.flood&&!t.river&&t.t!==T.WATER){b.strokeStyle=S.season===0&&S.sev>=1?'rgba(95,179,201,.85)':'rgba(95,179,201,.45)';b.lineWidth=1;b.beginPath();
+      for(let k=1;k<4;k++){const yy=y+TS*k/4;b.moveTo(x+TS*.15,yy);b.quadraticCurveTo(x+TS*.35,yy-TS*.08,x+TS*.5,yy);b.quadraticCurveTo(x+TS*.65,yy+TS*.08,x+TS*.85,yy)}b.stroke()}
+    if(t.t===T.MOUNT){b.fillStyle=S.season===3?'#f4f7fa':'#5f5852';b.beginPath();b.moveTo(x+TS*.15,y+TS*.82);b.lineTo(x+TS*.5,y+TS*.18);b.lineTo(x+TS*.85,y+TS*.82);b.closePath();b.globalAlpha=.55;b.fill();b.globalAlpha=1;
+      b.fillStyle='#f2f4f6';b.beginPath();b.moveTo(x+TS*.38,y+TS*.4);b.lineTo(x+TS*.5,y+TS*.18);b.lineTo(x+TS*.62,y+TS*.4);b.closePath();b.fill()}
+    else if(t.t===T.HILLS){b.strokeStyle='rgba(70,60,45,.45)';b.lineWidth=1;b.beginPath();b.arc(x+TS*.5,y+TS*.75,TS*.3,Math.PI*1.1,Math.PI*1.9);b.stroke()}
+    else if(t.t===T.FOREST){b.fillStyle=S.season===2?'rgba(120,70,25,.55)':'rgba(35,62,38,.6)';for(let k=0;k<3;k++){const px=x+TS*(.25+.25*k),py=y+TS*(.4+(k%2)*.25);b.beginPath();b.arc(px,py,TS*.13,0,Math.PI*2);b.fill()}}
+  }
+  // rivers
+  b.lineCap='round';b.lineJoin='round';
+  for(const r of S.rivers){b.strokeStyle=S.season===0&&S.sev>=1?'#4f9cc0':'#4e7fa3';b.lineWidth=Math.max(2,TS*(S.season===0&&S.sev===2?.38:.26));b.beginPath();
+    r.forEach((i,k)=>{const px=X(i)*TS+TS/2,py=Y(i)*TS+TS/2;k?b.lineTo(px,py):b.moveTo(px,py)});b.stroke()}
+  // grid hint
+  b.strokeStyle='rgba(0,0,0,.05)';b.lineWidth=1;b.beginPath();for(let x=0;x<=W;x++){b.moveTo(x*TS,0);b.lineTo(x*TS,H*TS)}for(let y=0;y<=H;y++){b.moveTo(0,y*TS);b.lineTo(W*TS,y*TS)}b.stroke();
+}
+function rgbToHex(rgb){const m=rgb.match(/\d+/g).map(Number);return'#'+m.map(v=>v.toString(16).padStart(2,'0')).join('')}
+const cx=i=>X(i)*TS+TS/2,cy=i=>Y(i)*TS+TS/2;
+function drawTrack(){
+  ctx.lineCap='round';
+  const seen=new Set();
+  const edges=[];for(let a=0;a<N;a++)for(const b of S.adj[a])if(a<b)edges.push([a,b]);
+  for(const pass of [0,1,2]){
+    for(const[a,b]of edges){
+      const ga=S.tiles[a].st>=0?S.tiles[b].grade:S.tiles[b].st>=0?S.tiles[a].grade:Math.min(S.tiles[a].grade,S.tiles[b].grade);const g=ga||2;
+      const x1=cx(a),y1=cy(a),x2=cx(b),y2=cy(b);
+      if(pass===0){ctx.strokeStyle=g===3?'rgba(230,235,238,.9)':'rgba(30,24,18,.35)';ctx.lineWidth=TS*(g===3?.42:g===2?.34:.26);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()}
+      else if(pass===1){ // ties
+        const dx=x2-x1,dy=y2-y1,L=Math.hypot(dx,dy),nx=-dy/L,ny=dx/L,n=Math.round(L/(TS*.28));
+        ctx.strokeStyle=g===1?'#8a6a4a':g===2?'#4a4d50':'#1a1c1e';ctx.lineWidth=Math.max(1,TS*.06);ctx.beginPath();
+        for(let k=0;k<=n;k++){const px=x1+dx*k/n,py=y1+dy*k/n,w=TS*(g===3?.17:.14);ctx.moveTo(px-nx*w,py-ny*w);ctx.lineTo(px+nx*w,py+ny*w)}ctx.stroke();
+      }else{
+        const tun=(S.tiles[a].t===T.MOUNT&&S.tiles[a].grade===3)||(S.tiles[b].t===T.MOUNT&&S.tiles[b].grade===3);
+        ctx.strokeStyle=g===1?'#6b4f33':g===2?'#2c2f33':'#111315';ctx.lineWidth=Math.max(1.2,TS*(g===3?.11:.08));
+        if(tun)ctx.setLineDash([TS*.18,TS*.12]);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.setLineDash([]);
+      }
+    }
+  }
+  // bridges
+  for(let i=0;i<N;i++){const t=S.tiles[i];if(t.grade>0&&t.river){ctx.strokeStyle=t.grade===3?'#1b1d20':'#5a4632';ctx.lineWidth=Math.max(1,TS*.06);ctx.strokeRect(X(i)*TS+TS*.22,Y(i)*TS+TS*.22,TS*.56,TS*.56)}}
+  // damage and snow
+  for(let i=0;i<N;i++){const t=S.tiles[i];if(!hasTrack(i))continue;
+    if(t.closed){ctx.fillStyle='rgba(240,246,250,.75)';ctx.fillRect(X(i)*TS+1,Y(i)*TS+1,TS-2,TS-2);ctx.strokeStyle='#5d86a8';ctx.lineWidth=1.2;const x=cx(i),y=cy(i),r=TS*.28;ctx.beginPath();for(let k=0;k<3;k++){const a=k*Math.PI/3;ctx.moveTo(x-Math.cos(a)*r,y-Math.sin(a)*r);ctx.lineTo(x+Math.cos(a)*r,y+Math.sin(a)*r)}ctx.stroke()}
+    if(t.dmg!==0){const x=cx(i),y=cy(i),r=TS*.3;ctx.strokeStyle=t.dmg>0?'#f0a63a':'#e3604f';ctx.lineWidth=Math.max(2,TS*.12);ctx.beginPath();ctx.moveTo(x-r,y-r);ctx.lineTo(x+r,y+r);ctx.moveTo(x+r,y-r);ctx.lineTo(x-r,y+r);ctx.stroke()}
+  }
+}
+function drawTowns(){
+  ctx.textAlign='center';
+  for(const t of S.towns){const x0=cx(t.tile),y0=cy(t.tile);const n=t.ghost?Math.min(6,t.offs.length):clamp(Math.round(Math.sqrt(t.pop)/2.6),2,44);
+    for(let k=0;k<n;k++){const[ox,oy,s]=t.offs[k];const x=x0+ox*TS,y=y0+oy*TS,w=TS*.24*s;
+      ctx.fillStyle=t.ghost?'#7d7a74':t.boom&&!t.boomSaved?'#d38a4a':'#b5463a';ctx.fillRect(x-w/2,y-w/2,w,w*.8);ctx.fillStyle=t.ghost?'#5c5954':'#5a2a22';ctx.fillRect(x-w/2,y-w/2-w*.25,w,w*.28)}
+    const fs=Math.max(9,Math.min(13,TS*.6));ctx.font=`600 ${fs}px "IBM Plex Sans",sans-serif`;
+    const label=t.ghost?t.name+' (abandoned)':t.name,sub=t.ghost?'':fmt(t.pop)+(t.boom&&!t.boomSaved?` · ${Math.max(0,Math.ceil((t.boom-S.day)/30))} mo left`:'');
+    const ly=y0-TS*1.25;ctx.lineWidth=3;ctx.strokeStyle='rgba(14,27,38,.85)';ctx.fillStyle=t.ghost?'#b9b5ad':'#fff';ctx.strokeText(label,x0,ly);ctx.fillText(label,x0,ly);
+    if(sub){ctx.font=`500 ${fs*.85}px "IBM Plex Mono",monospace`;const arrow=t.trend>.0015?' ▲':t.trend<-.0015?' ▼':'';ctx.strokeText(sub+arrow,x0,ly+fs);ctx.fillStyle=t.trend<-.0015?'#ffb0a3':t.trend>.0015?'#c6f0d3':'#e7e9e2';ctx.fillText(sub+arrow,x0,ly+fs)}
+  }
+}
+function drawInds(){
+  for(const d of S.inds){const x=X(d.tile)*TS,y=Y(d.tile)*TS,def=IND[d.type],c=CARGO[def.out].col;
+    ctx.fillStyle=d.closed?'#6f6f6f':c;ctx.strokeStyle='#14202a';ctx.lineWidth=1.2;const p=TS*.1;
+    ctx.beginPath();ctx.roundRect?ctx.roundRect(x+p,y+p,TS-2*p,TS-2*p,TS*.15):ctx.rect(x+p,y+p,TS-2*p,TS-2*p);ctx.fill();ctx.stroke();
+    if(def.inp){ctx.strokeStyle='#14202a';ctx.lineWidth=1;ctx.strokeRect(x+p*2,y+p*2,TS-4*p,TS-4*p)}
+    ctx.fillStyle=d.type==='coal'&&!d.closed?'#e9ecef':'#14202a';ctx.font=`600 ${Math.max(7,TS*.38)}px "IBM Plex Mono",monospace`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(def.code,x+TS/2,y+TS/2+.5);ctx.textBaseline='alphabetic';
+    if(d.closed){ctx.strokeStyle='#e3604f';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(x+p,y+TS-p);ctx.lineTo(x+TS-p,y+p);ctx.stroke()}
+    if(d.mult>1.3&&!d.closed){ctx.fillStyle='#71c48f';ctx.font=`600 ${Math.max(7,TS*.3)}px "IBM Plex Mono",monospace`;ctx.fillText('+',x+TS*.88,y+TS*.3)}
+  }
+}
+function drawStations(){
+  for(const s of S.stations){if(s.dead)continue;const x=X(s.tile)*TS,y=Y(s.tile)*TS;ctx.fillStyle='#14202a';ctx.fillRect(x+TS*.12,y+TS*.24,TS*.76,TS*.52);ctx.strokeStyle='#f0a63a';ctx.lineWidth=Math.max(1.5,TS*.09);ctx.strokeRect(x+TS*.12,y+TS*.24,TS*.76,TS*.52);
+    if(s.rating>0){ctx.fillStyle=s.rating>.6?'#71c48f':s.rating>.4?'#f0a63a':'#e3604f';ctx.fillRect(x+TS*.3,y+TS*.42,TS*.4,TS*.16)}}
+}
+function trainXY(path,s){const k=clamp(Math.floor(s),0,path.length-1),f=s-k;const a=path[k],b=path[Math.min(k+1,path.length-1)];return[cx(a)+(cx(b)-cx(a))*f,cy(a)+(cy(b)-cy(a))*f]}
+function drawTrains(){
+  for(const tr of S.trains){const m=modelOf(tr);let s=tr.k+tr.frac;
+    if(tr.state==='move'&&tr.pathPrev===tr.path)s=tr.sPrev+(tr.sNow-tr.sPrev)*UI.tickFrac;
+    const pts=[];for(let j=0;j<=tr.cars;j++)pts.push(trainXY(tr.path,Math.max(0,s-j*.3)));
+    for(let j=tr.cars;j>=0;j--){const[x,y]=pts[j];const[px,py]=pts[Math.max(0,j-1)];let ang=Math.atan2(py-y,px-x);if(j===0){const[nx,ny]=trainXY(tr.path,s+.2);ang=Math.atan2(ny-y,nx-x)}
+      ctx.save();ctx.translate(x,y);ctx.rotate(isNaN(ang)?0:ang);const L=j?TS*.24:TS*.34,Wd=TS*.22;
+      ctx.fillStyle=j?'#2a2a2a':m.col;ctx.strokeStyle='#0b0f12';ctx.lineWidth=1;ctx.fillRect(-L/2,-Wd/2,L,Wd);ctx.strokeRect(-L/2,-Wd/2,L,Wd);
+      if(j&&tr.cargo.length){ctx.fillStyle=CARGO[tr.cargo[(j-1)%tr.cargo.length].type].col;ctx.fillRect(-L/2+1.5,-Wd/2+1.5,L-3,Wd-3)}
+      ctx.restore()}
+    if(tr.state==='wait'||tr.state==='lost'){const[x,y]=pts[0];ctx.fillStyle='#e3604f';ctx.beginPath();ctx.arc(x,y-TS*.35,TS*.12,0,Math.PI*2);ctx.fill()}
+  }
+}
+function drawOverlay(){
+  const h=UI.hover;
+  if(UI.tool==='station'&&h>=0){ctx.fillStyle='rgba(240,166,58,.13)';ctx.strokeStyle='rgba(240,166,58,.8)';ctx.lineWidth=1;const x=(X(h)-2)*TS,y=(Y(h)-2)*TS;ctx.fillRect(x,y,TS*5,TS*5);ctx.strokeRect(x,y,TS*5,TS*5)}
+  if(UI.sel>=0&&S.tiles[UI.sel].st>=0){const x=(X(UI.sel)-2)*TS,y=(Y(UI.sel)-2)*TS;ctx.strokeStyle='rgba(240,166,58,.8)';ctx.setLineDash([4,3]);ctx.strokeRect(x,y,TS*5,TS*5);ctx.setLineDash([])}
+  // survey preview
+  const g=UI.grade;const tiles=legsTiles();
+  if(UI.tool==='track'){
+    let prev=null;
+    const draw=(arr,alpha)=>{for(const i of arr){const tl=S.tiles[i];if(hasTrack(i))continue;const fv=floodVuln(tl,g)>0,sn=snowThresh(tl,g);
+      ctx.fillStyle=fv&&sn<=2?`rgba(227,96,79,${alpha})`:fv?`rgba(95,179,201,${alpha})`:sn<=1?`rgba(230,240,250,${alpha})`:sn===2?`rgba(240,166,58,${alpha})`:`rgba(113,196,143,${alpha})`;
+      ctx.fillRect(X(i)*TS+TS*.18,Y(i)*TS+TS*.18,TS*.64,TS*.64)}
+      ctx.strokeStyle=`rgba(255,255,255,${alpha+.2})`;ctx.lineWidth=2;ctx.setLineDash([5,4]);ctx.beginPath();arr.forEach((i,k)=>k?ctx.lineTo(cx(i),cy(i)):ctx.moveTo(cx(i),cy(i)));ctx.stroke();ctx.setLineDash([])};
+    if(tiles.length)draw(tiles,.75);
+    const from=tiles.length?tiles[tiles.length-1]:UI.surveyStart;
+    if(from>=0&&h>=0&&h!==from){if(UI.ghostKey!==`${from}|${h}|${g}|${UI.pref}`){UI.ghostKey=`${from}|${h}|${g}|${UI.pref}`;UI.ghost=survey(from,h,g,UI.pref)}if(UI.ghost)draw(UI.ghost,.35)}
+    if(UI.surveyStart>=0){ctx.strokeStyle='#f0a63a';ctx.lineWidth=2;ctx.strokeRect(X(UI.surveyStart)*TS+1,Y(UI.surveyStart)*TS+1,TS-2,TS-2)}
+  }
+  if(UI.tool==='upgrade'&&h>=0&&S.tiles[h].grade>0){const run=upgradeRun(h);ctx.strokeStyle='#f0a63a';ctx.lineWidth=2;for(const i of run)ctx.strokeRect(X(i)*TS+2,Y(i)*TS+2,TS-4,TS-4)}
+  if(h>=0){ctx.strokeStyle='rgba(255,255,255,.7)';ctx.lineWidth=1;ctx.strokeRect(X(h)*TS+.5,Y(h)*TS+.5,TS-1,TS-1)}
+  // train stop picking
+  if(UI.tab==='trains'){for(const[k,id]of UI.stops.entries()){const s=S.stations[id];ctx.fillStyle='#f0a63a';ctx.beginPath();ctx.arc(cx(s.tile)+TS*.45,cy(s.tile)-TS*.45,TS*.3,0,7);ctx.fill();ctx.fillStyle='#1b1206';ctx.font=`700 ${Math.max(8,TS*.38)}px "IBM Plex Mono",monospace`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(k+1,cx(s.tile)+TS*.45,cy(s.tile)-TS*.45+.5);ctx.textBaseline='alphabetic'}}
+}
+function render(){if(!S)return;drawBase();ctx.clearRect(0,0,W*TS,H*TS);ctx.drawImage(base,0,0,W*TS,H*TS);drawTrack();drawInds();drawStations();drawTowns();drawTrains();drawOverlay()}
+
+// ================= tools =================
+function upgradeRun(i){ // contiguous run of plain track between junctions/stations
+  const run=[i];const seen=new Set([i]);const stack=[i];
+  while(stack.length){const c=stack.pop();for(const j of S.adj[c]){if(seen.has(j))continue;const t=S.tiles[j];if(t.st>=0||t.grade===0)continue;seen.add(j);if(S.adj[j].length<=2){run.push(j);stack.push(j)}else run.push(j)}
+    if(run.length>60)break}
+  return run;
+}
+function upgradeCost(run,g){let c=0;for(const i of run){const t=S.tiles[i];if(t.grade>=g)continue;c+=Math.max(0,tileCost(i,g)-tileCost(i,t.grade)*.6)}return Math.round(c/100)*100}
+function doUpgrade(i){const run=upgradeRun(i),g=UI.grade;const c=upgradeCost(run,g);if(c<=0)return news(`That run is already ${GRADE[g].toLowerCase()} or better.`);if(S.cash<c)return news(`Upgrading costs ${moneyFull(c)}.`,'bad');
+  spend('construction',c);let n=0;for(const j of run){const t=S.tiles[j];if(t.grade<g){t.grade=g;n++;if(t.closed&&S.sev<snowThresh(t,g)+(S.crewsNow.snow?1:0))t.closed=false;if(t.dmg===-1)t.dmg=0}}
+  news(`Upgraded ${n} tiles to ${GRADE[g].toLowerCase()} for ${moneyFull(c)}.`);graphChanged()}
+function demolish(i){const t=S.tiles[i];
+  if(S.trains.some(tr=>trainTile(tr)===i||(tr.path[tr.k+1]===i&&tr.frac>0)))return news('A train is on that tile. Wait for it to pass.','bad');
+  if(t.st>=0){const st=S.stations[t.st];if(S.trains.some(tr=>tr.stops.includes(st.id)))return news(`Trains still stop at ${st.name}. Sell or reroute them first.`,'bad');
+    st.dead=true;t.st=-1;if(t.grade===0)for(const j of [...S.adj[i]]){S.adj[j]=S.adj[j].filter(k=>k!==i)}if(t.grade===0)S.adj[i]=[];earn('sales',1500);news(`${st.name} station closed.`);graphChanged();return}
+  if(t.grade>0){const v=Math.round(tileCost(i,t.grade)*.2);for(const j of S.adj[i])S.adj[j]=S.adj[j].filter(k=>k!==i);S.adj[i]=[];t.grade=0;t.dmg=0;t.closed=false;earn('sales',v);graphChanged()}}
+
+function inspectHTML(i){
+  const t=S.tiles[i];let h=`<h4>${TER_NAME[t.t]}${t.river?' · River':''}${t.flood&&!t.river?' · Floodplain':''}</h4><div class="hint num">Tile ${X(i)},${Y(i)} · elevation ${fmt(1800+t.e*9200)} ft</div>`;
+  if(t.town>=0){const tw=S.towns[t.town];h+=townHTML(tw)}
+  if(t.ind>=0){const d=S.inds[t.ind],def=IND[d.type];const f=d.prod6>0?d.moved6/d.prod6:0;
+    h+=`<div class="row"><b>${def.name}</b><span class="num">${d.closed?'closed':def.inp?'processor':'output ×'+d.mult.toFixed(2)}</span></div>`;
+    if(def.inp)h+=`<div class="hint">Takes ${def.inp.map(c=>CARGO[c].name.toLowerCase()).join(' + ')}, makes ${CARGO[def.out].name.toLowerCase()}. Waiting: ${def.inp.map(c=>fmt(d.pending[c]||0)+' '+c).join(', ')}</div>`;
+    else h+=`<div class="hint">Makes about ${fmt(def.base*d.mult)} ${CARGO[def.out].name.toLowerCase()} a month (seasonal). Shipped this half-year: ${Math.round(f*100)}%. Above 55% it tends to expand; ignored for two years it shrinks and may close.</div>`}
+  if(t.st>=0){const s=S.stations[t.st];h+=`<div class="row"><b>${esc(s.name)} station</b><span class="num">rating ${Math.round(s.rating*100)}%</span></div>`;
+    const ac=[...accepts(s)].map(c=>CARGO[c].name).join(', ')||'nothing',pr=[...produces(s)].map(c=>CARGO[c].name).join(', ')||'nothing';
+    h+=`<div class="hint">Supplies: ${pr}<br>Accepts: ${ac}</div>`;
+    const stock=Object.entries(s.stock).filter(([,v])=>v>=1).map(([k,v])=>`${fmt(v)} ${CARGO[k].name.toLowerCase()}`).join(', ');h+=`<div class="hint">Waiting: ${stock||'nothing'}</div>`;
+    if(!s.wants.length)h+=`<div class="hint" style="color:var(--lamp)">No train serves this station yet, so nothing gathers here.</div>`}
+  if(t.grade>0){h+=`<div class="row"><span class="k">Track</span><span>${GRADE[t.grade]}${t.t===T.MOUNT&&t.grade===3?' (tunnel)':t.river?' bridge':''}</span></div>`;
+    if(t.dmg===-1)h+=`<div class="row"><span style="color:var(--stop)">Washed out</span><button class="btn small" data-act="repair" data-i="${i}">Repair ${moneyFull(repairCost(i))}</button></div>`;
+    else if(t.dmg>0)h+=`<div class="hint">Repair crews at work: ${t.dmg} days left.</div>`;
+    if(t.closed)h+=`<div class="hint" style="color:var(--snow)">Snowbound until the spring thaw.</div>`}
+  h+=riskHTML(i);return h;
+}
+function riskHTML(i){const t=S.tiles[i];if(t.t===T.WATER)return'<div class="hint">Open water. Track cannot cross a lake.</div>';
+  let r='<table class="t"><thead><tr><th>Grade</th><th class="r">Cost</th><th>Weather risk</th></tr></thead><tbody>';
+  for(const g of[1,2,3]){const fv=floodVuln(t,g),sn=snowThresh(t,g);const risks=[];if(fv>0)risks.push(`washout ${Math.round(fv*100)}% exposure`);if(sn<=2)risks.push(sn===0?'closes every winter':sn===1?'closes in snowy winters':'closes in blizzards');
+    r+=`<tr><td>${GRADE[g]}</td><td class="r num">${moneyFull(tileCost(i,g))}</td><td>${risks.join('; ')||'all-weather'}</td></tr>`}
+  return r+'</tbody></table>'}
+function townHTML(tw){
+  if(tw.ghost)return`<div><b>${esc(tw.name)}</b>: abandoned.</div>`;
+  const bar=(v)=>`<div class="bar ${v<.35?'lo':v<.7?'mid':''}"><i style="width:${Math.round(v*100)}%"></i></div>`;
+  const conn=isConnected(tw);
+  return `<div class="row"><b>${esc(tw.name)}</b><span class="num">${fmt(tw.pop)} people ${tw.trend>0?'▲':'▼'} ${(tw.trend*1200).toFixed(1)}%/yr</span></div>
+  ${tw.boom&&!tw.boomSaved?`<div class="hint" style="color:var(--lamp)">Boomtown: needs passenger service by ${monthStr(tw.boom)}.</div>`:''}
+  <div class="hint">${conn?'Has passenger service.':'No passenger service. It will shrink.'}</div>
+  <div style="display:grid;grid-template-columns:90px 1fr;gap:4px 8px;align-items:center;font-size:12px">
+  <span>Grain</span>${bar(tw.sat.grain)}<span>Supplies</span>${bar(tw.sat.supplies)}<span>Coal${S.season===3?' (winter)':''}</span>${bar(tw.sat.coal)}${tw.pop>=1000?`<span>Steel</span>${bar(tw.sat.steel)}`:''}</div>`;
+}
+
+// ================= UI panels =================
+const $=id=>document.getElementById(id);
+function setSpeed(v){UI.speed=v;document.querySelectorAll('.speeds button').forEach(b=>b.classList.toggle('on',+b.dataset.sp===v))}
+function updateHeader(){
+  $('hDate').textContent=dateStr();
+  $('hSeason').innerHTML=`${SEASONS[S.season]} <span class="sev sev${S.sev}">${SEVN[S.season][S.sev]}</span>`;
+  $('hCash').textContent=moneyFull(S.cash);$('hCash').classList.toggle('neg',S.cash<0);
+  $('hDebt').textContent=moneyFull(S.debt);$('hNet').textContent=money(netWorth());$('hPop').textContent=fmt(totalPop());
+}
+function updateNews(){$('news').innerHTML=S.news.slice(0,7).map(n=>`<li class="${n.kind}"><span class="d">${monthStr(n.d)}</span><span>${esc(n.text)}</span></li>`).join('')}
+function updateBuild(){
+  $('gradeBox').hidden=!(UI.tool==='track'||UI.tool==='upgrade');$('prefBox').hidden=UI.tool!=='track';
+  $('gradeHint').textContent=['', 'About half price. Slow, washes out on floodplains, closes in hill snow and every mountain winter.','The standard. Holds in moderate weather; floods and mountain snow can still beat it.','Embankments, snow sheds, iron bridges and tunnels. Twice the price (tunnels triple), immune to weather and fast on grades.'][UI.grade];
+  const c=$('toolCard');let h='';
+  if(UI.tool==='inspect')h=UI.sel>=0?inspectHTML(UI.sel):'<h4>Inspect</h4><div class="hint">Click any tile, town, industry or station to see its details, needs and weather exposure.</div>';
+  else if(UI.tool==='station')h=`<h4>Build a station</h4><div class="hint">Click a tile. It gathers cargo from industries within 2 tiles and from towns within 3 tiles (the box on the map). Cost from $6,000 plus land, which rises near big towns.</div>${UI.hover>=0&&S.tiles[UI.hover].t!==T.WATER?`<div class="row"><span class="k">Here</span><span class="num">${moneyFull(stationCost(UI.hover))}</span></div>`:''}`;
+  else if(UI.tool==='track'){const sm=planSummary();
+    h=`<h4>Survey track</h4><div class="hint">${UI.surveyStart<0?'Click the starting tile, usually a station.':'Click the next point. Each click adds a leg, so click intermediate tiles to steer the route. Esc or right-click cancels.'}</div>`;
+    if(UI.legs.length)h+=`<div class="row"><span class="k">New tiles</span><span class="num">${sm.newT} (${sm.bridges} bridge${sm.bridges===1?'':'s'}${sm.tunnels?', '+sm.tunnels+' tunnel':''})</span></div>
+      <div class="row"><span class="k">Cost</span><span class="num" style="color:${sm.cost>S.cash?'var(--stop)':'inherit'}">${moneyFull(sm.cost)}</span></div>
+      <div class="row"><span class="k">Flood-exposed</span><span class="num">${sm.flood} tiles</span></div>
+      <div class="row"><span class="k">Snow closures</span><span class="num">${sm.snow[0]} every winter · ${sm.snow[1]} snowy · ${sm.snow[2]} blizzard</span></div>
+      <div class="hint">Preview colors: green all-weather, blue floods, white closes in ordinary snow, amber closes only in blizzards, red both.</div>
+      <div class="btns"><button class="btn" data-act="commit" ${sm.cost>S.cash?'disabled':''}>Build ${moneyFull(sm.cost)}</button><button class="btn ghost" data-act="undo">Undo leg</button><button class="btn ghost" data-act="cancel">Cancel</button></div>`}
+  else if(UI.tool==='upgrade'){h=`<h4>Upgrade track</h4><div class="hint">Hover a stretch of track. Click to upgrade the whole run between junctions to the chosen grade.</div>`;
+    if(UI.hover>=0&&S.tiles[UI.hover].grade>0){const run=upgradeRun(UI.hover);h+=`<div class="row"><span class="k">${run.length} tiles → ${GRADE[UI.grade]}</span><span class="num">${moneyFull(upgradeCost(run,UI.grade))}</span></div>`}}
+  else if(UI.tool==='demolish')h='<h4>Demolish</h4><div class="hint">Click a track tile to tear it up (20% salvage) or a station no train uses.</div>';
+  if(c.dataset.h!==h){c.innerHTML=h;c.dataset.h=h}
+}
+function updateTrainsTab(){
+  const sel=$('mdl');const ms=unlocked();const cur=sel.value;
+  if(sel.options.length!==ms.length){sel.innerHTML=ms.map(m=>`<option value="${m.id}">${m.name} (${m.year})</option>`).join('');sel.value=ms.some(m=>m.id===cur)?cur:ms[ms.length-1].id}
+  const m=MODELS.find(x=>x.id===sel.value)||ms[0];const cars=$('cars');cars.max=m.maxCars;if(+cars.value>m.maxCars)cars.value=m.maxCars;if(+cars.value<1)cars.value=1;
+  $('mdlInfo').innerHTML=`${m.note} Speed ${m.speed} tiles/day · up to ${m.maxCars} cars · grade power ${Math.round(m.power*100)}% · upkeep ${moneyFull(m.run+(+cars.value)*CAR_RUN)}/yr<br><b>Price ${moneyFull(trainCost(m,+cars.value))}</b>`;
+  const sl=UI.stops.map((id,k)=>`<span>${k+1}. ${esc(S.stations[id].name)}</span>`).join('')||'<span>none yet</span>';if($('stopList').innerHTML!==sl)$('stopList').innerHTML=sl;
+  $('buyBtn').disabled=new Set(UI.stops).size<2||S.cash<trainCost(m,+cars.value);
+  const r=S.trains.map(tr=>{const mm=modelOf(tr);let st;const dest=S.stations[tr.stops[tr.si]].name;
+    if(tr.state==='load')st=`Loading at ${esc(S.stations[tr.stops[(tr.si)%tr.stops.length]].name)}`;else if(tr.state==='wait')st=`<span style="color:var(--stop)">${tr.note||'Held'}</span> on the way to ${esc(dest)}`;else if(tr.state==='lost')st=`<span style="color:var(--stop)">${esc(tr.note)}</span>`;else st=`En route to ${esc(dest)}${tr.note==='held'?' (route blocked ahead)':''}`;
+    const load=tr.cargo.reduce((s,c)=>s+c.amt,0);
+    return`<div class="trainrow"><span class="sw" style="background:${mm.col}"></span><div><div class="nm">No. ${tr.id} · ${mm.name}</div><div class="hint">${st}<br>${tr.stops.map(i=>esc(S.stations[i].name)).join(' → ')}<br>Load ${fmt(load)}/${tr.cars*CAR_CAP} · this year <span class="num">${moneyFull(tr.profitY)}</span>${tr.profitL!==null?` · last <span class="num">${moneyFull(tr.profitL)}</span>`:''}</div></div><button class="btn ghost small" data-act="sell" data-id="${tr.id}">Sell ${money(trainValue(tr))}</button></div>`}).join('')||'<div class="hint">No trains yet. Build two stations joined by track, then order one above.</div>';
+  if($('roster').dataset.h!==r){$('roster').innerHTML=r;$('roster').dataset.h=r}
+}
+function exposure(){let fl=0,sn=[0,0,0];for(const t of S.tiles){if(t.grade>0){if(floodVuln(t,t.grade)>0)fl++;const s=snowThresh(t,t.grade);if(s<=2)sn[s]++}}return{fl,sn}}
+function snowCrewCost(){let n=0;for(const t of S.tiles)if(t.grade>0&&(t.t===T.HILLS||t.t===T.MOUNT))n++;return 4000+n*260}
+function leveeCost(){let n=0;for(const t of S.tiles)if(t.grade>0&&t.flood)n++;return 3000+n*220}
+function updateAlmanac(){
+  const n=S.next,ex=exposure();const fcName=SEVN[n.season][n.fc];
+  const dist=[0,1,2].map(v=>v===n.fc?n.acc:(1-n.acc)/2);
+  let h=`<div class="card"><h4>Next: ${SEASONS[n.season]}</h4><div>The Almanac predicts <span class="sev sev${n.fc}">${fcName}</span></div>
+   <div class="hint">Its ${S.telegraph?'telegraph-fed':'folk'} forecasts are right about ${Math.round(n.acc*100)}% of the time.</div>
+   <table class="t num"><tbody>${[0,1,2].map(v=>`<tr><td>${SEVN[n.season][v]}</td><td class="r">${Math.round(dist[v]*100)}%</td></tr>`).join('')}</tbody></table>
+   <div class="hint">${['Spring floods wash out light and ballasted track on floodplains and bridges.','Summer heat slows light track. Drought cuts the grain harvest.','Autumn brings the harvest: farms ship 80% more grain unless frost cuts it short.','Winter snow closes hill and mountain track. Towns burn four times the coal and shrink without it.'][n.season]}</div></div>`;
+  if(n.season===3){const c=snowCrewCost();h+=`<div class="card"><h4>Snow crews for the coming winter</h4><div class="hint">Rotary plows and shovel gangs. Track holds one level of snow worse than its grade allows.</div>
+     ${S.crewsNext.snow?'<div style="color:var(--go)">Hired. Ready for the first snow.</div>':`<button class="btn" data-act="snow" ${S.cash<c?'disabled':''}>Hire for ${moneyFull(c)}</button>`}</div>`}
+  if(n.season===0){const c=leveeCost();h+=`<div class="card"><h4>Levee crews for the coming spring</h4><div class="hint">Sandbags and watchmen at every bridge. Cuts washout chances by more than half.</div>
+     ${S.crewsNext.levee?'<div style="color:var(--go)">Hired. Sandbags are stacked.</div>':`<button class="btn" data-act="levee" ${S.cash<c?'disabled':''}>Hire for ${moneyFull(c)}</button>`}</div>`}
+  h+=`<div class="card"><h4>Your exposure</h4><div class="row"><span class="k">Flood-exposed track</span><span class="num">${ex.fl} tiles</span></div>
+   <div class="row"><span class="k">Closes every winter</span><span class="num">${ex.sn[0]} tiles</span></div><div class="row"><span class="k">Closes in snowy winters</span><span class="num">${ex.sn[1]} tiles</span></div><div class="row"><span class="k">Closes in blizzards</span><span class="num">${ex.sn[2]} tiles</span></div>
+   <label class="row" style="cursor:pointer"><span>Auto-repair washouts</span><input type="checkbox" id="autoRep" ${S.autoRepair?'checked':''}></label></div>`;
+  if(!S.telegraph)h+=`<div class="card"><h4>Weather Bureau telegraph</h4><div class="hint">Wire reports from upriver stations. Forecasts become about 88% accurate from the next season on.</div><button class="btn" data-act="tele" ${S.cash<25000?'disabled':''}>Subscribe for $25,000</button></div>`;
+  if($('almanac').dataset.h!==h){$('almanac').innerHTML=h;$('almanac').dataset.h=h}
+}
+function updateLedger(){
+  const y=S.yr,rev=Object.values(y.rev).reduce((s,v)=>s+v,0);
+  const rows=[['Revenue',rev],['Running costs',-y.running],['Track & station upkeep',-y.maint],['Interest',-y.interest],['Repairs',-y.repairs],['Weather crews',-y.crews]];
+  const op=rows.reduce((s,r)=>s+r[1],0);
+  let h=`<div class="card"><h4>Treasury</h4><div class="row"><span class="k">Loan</span><span class="num">${moneyFull(S.debt)} of ${money(LOAN_MAX)} at ${(interestRate()*100).toFixed(1)}%</span></div>
+   <div class="btns"><button class="btn small" data-act="borrow" ${S.debt>=LOAN_MAX?'disabled':''}>Borrow $25k</button><button class="btn ghost small" data-act="repay" ${S.debt<=0||S.cash<LOAN_STEP?'disabled':''}>Repay $25k</button></div>
+   <canvas class="spark" id="spark" width="320" height="60" aria-label="Net worth history"></canvas><div class="hint">Net worth by month. Now ${moneyFull(netWorth())}.</div></div>`;
+  h+=`<div class="card"><h4>${date().y} so far</h4><table class="t num"><tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td class="r">${moneyFull(r[1])}</td></tr>`).join('')}<tr><td><b>Operating profit</b></td><td class="r"><b>${moneyFull(op)}</b></td></tr><tr><td>Construction &amp; equipment</td><td class="r">${moneyFull(-(y.construction+y.equipment))}</td></tr></tbody></table>
+   <div class="hint">${Object.entries(y.rev).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${CARGO[k].name} ${money(v)}`).join(' · ')||'No revenue yet.'}</div></div>`;
+  h+=`<div class="card"><h4>Charter goals by 1900</h4>${GOALS.map(g=>`<div class="goal ${S.goalsMet[g.id]?'met':''}"><span class="ck"></span><span>${g.text}${S.goalsMet[g.id]?` <span class="hint">(${S.goalsMet[g.id]})</span>`:''}</span></div>`).join('')}<div class="hint">Score if the charter ended today: <b class="num">${fmt(score())}</b> (${rank(score())})</div></div>`;
+  const tw=S.towns.filter(t=>!t.ghost).sort((a,b)=>b.pop-a.pop);
+  h+=`<div class="card"><h4>Towns</h4><table class="t"><thead><tr><th>Town</th><th class="r">Pop.</th><th class="r">Trend</th><th>Service</th></tr></thead><tbody>${tw.map(t=>`<tr><td>${esc(t.name)}${t.boom&&!t.boomSaved?' ⚑':''}</td><td class="r num">${fmt(t.pop)}</td><td class="r num" style="color:${t.trend>0?'var(--go)':'var(--stop)'}">${(t.trend*1200).toFixed(1)}%</td><td>${isConnected(t)?'yes':'—'}</td></tr>`).join('')}</tbody></table>
+   <div class="hint">${S.towns.filter(t=>t.ghost).length} abandoned. Trend is the annualized growth rate.</div></div>`;
+  if($('ledger').dataset.h!==h){$('ledger').innerHTML=h;$('ledger').dataset.h=h;drawSpark()}
+}
+function drawSpark(){const c=$('spark');if(!c)return;const g=c.getContext('2d');const w=c.width,h=c.height;g.clearRect(0,0,w,h);const d=S.hist.map(o=>o.nw);if(d.length<2){g.fillStyle='#93a8b6';g.font='11px IBM Plex Sans';g.fillText('Fills in month by month.',4,34);return}
+  const mn=Math.min(0,...d),mx=Math.max(...d,1);const px=k=>k/(d.length-1)*(w-6)+3,py=v=>h-4-(v-mn)/(mx-mn)*(h-10);
+  g.strokeStyle='rgba(147,168,182,.25)';g.beginPath();g.moveTo(0,py(0));g.lineTo(w,py(0));g.stroke();
+  g.beginPath();d.forEach((v,k)=>k?g.lineTo(px(k),py(v)):g.moveTo(px(k),py(v)));g.strokeStyle='#f0a63a';g.lineWidth=1.6;g.stroke();
+  g.lineTo(px(d.length-1),h);g.lineTo(px(0),h);g.closePath();g.fillStyle='rgba(240,166,58,.12)';g.fill();
+  g.fillStyle='#f0a63a';g.beginPath();g.arc(px(d.length-1),py(d[d.length-1]),2.5,0,7);g.fill()}
+let lastUI=0;
+function updateUI(force){const now=performance.now();if(!force&&now-lastUI<220)return;lastUI=now;updateHeader();if(UI.newsDirty){updateNews();UI.newsDirty=false}
+  if(UI.tab==='build')updateBuild();else if(UI.tab==='trains')updateTrainsTab();else if(UI.tab==='almanac')updateAlmanac();else updateLedger()}
+function hoverText(i){if(i<0)return'Hover the map to survey a tile.';const t=S.tiles[i];
+  let s=`<b>${TER_NAME[t.t]}</b>${t.river?' · river (needs a bridge)':''}${t.flood&&!t.river?' · floodplain':''} · ${fmt(1800+t.e*9200)} ft`;
+  if(t.town>=0){const tw=S.towns[t.town];s+=` · <b>${esc(tw.name)}</b> ${tw.ghost?'(abandoned)':fmt(tw.pop)}`}
+  if(t.ind>=0){const d=S.inds[t.ind];s+=` · <b>${IND[d.type].name}</b>${d.closed?' (closed)':''}`}
+  if(t.st>=0)s+=` · <b>${esc(S.stations[t.st].name)} station</b>`;
+  if(t.grade>0)s+=` · ${GRADE[t.grade]} track${t.closed?' · snowbound':''}${t.dmg===-1?' · washed out':''}`;
+  if(t.t!==T.WATER&&UI.tool==='track'){const g=UI.grade,fv=floodVuln(t,g),sn=snowThresh(t,g);s+=`<br>${GRADE[g]} here: <span class="num">${moneyFull(tileCost(i,g))}</span>${fv?` · flood exposure ${Math.round(fv*100)}%`:''}${sn<=2?` · ${['closes every winter','closes in snowy winters','closes in blizzards'][sn]}`:''}${!fv&&sn>2?' · all-weather':''}`}
+  return s}
+
+// ================= input =================
+function tileAt(e){const r=cv.getBoundingClientRect();const x=Math.floor((e.clientX-r.left)/(r.width/W)),y=Math.floor((e.clientY-r.top)/(r.height/H));return inb(x,y)?idx(x,y):-1}
+cv.addEventListener('mousemove',e=>{const i=tileAt(e);if(i!==UI.hover){UI.hover=i;$('hover').innerHTML=hoverText(i);if(UI.tool!=='inspect')updateUI(true)}});
+cv.addEventListener('mouseleave',()=>{UI.hover=-1;$('hover').innerHTML=hoverText(-1)});
+cv.addEventListener('contextmenu',e=>{e.preventDefault();cancelSurvey()});
+cv.addEventListener('click',e=>{const i=tileAt(e);if(i<0||!S||S.over)return;UI.hover=i;
+  if(UI.tab==='trains'){const t=S.tiles[i];let st=t.st>=0?S.stations[t.st]:S.stations.find(s=>!s.dead&&cheb(s.tile,i)<=1);if(st){if(UI.stops[UI.stops.length-1]!==st.id)UI.stops.push(st.id)}updateUI(true);return}
+  if(UI.tool==='inspect'){UI.sel=i}
+  else if(UI.tool==='station')buildStation(i);
+  else if(UI.tool==='track'){
+    if(UI.surveyStart<0){if(S.tiles[i].t===T.WATER||S.tiles[i].ind>=0)return news('Start the survey on dry land.','bad');UI.surveyStart=i}
+    else{const from=UI.legs.length?UI.legs[UI.legs.length-1].slice(-1)[0]:UI.surveyStart;if(i===from)return;const p=survey(from,i,UI.grade,UI.pref);if(!p)news('The surveyors can’t find a route there.','bad');else UI.legs.push(p)}}
+  else if(UI.tool==='upgrade'){if(S.tiles[i].grade>0)doUpgrade(i)}
+  else if(UI.tool==='demolish')demolish(i);
+  $('hover').innerHTML=hoverText(i);updateUI(true)});
+function cancelSurvey(){UI.legs=[];UI.surveyStart=-1;UI.ghost=null;UI.ghostKey='';updateUI(true)}
+function setTool(t){UI.tool=t;if(t!=='track')cancelSurvey();document.querySelectorAll('#tools button').forEach(b=>b.classList.toggle('on',b.dataset.tool===t));if(UI.tab!=='build')setTab('build');updateUI(true)}
+function setTab(t){UI.tab=t;document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));for(const n of['build','trains','almanac','ledger'])$('tab-'+n).hidden=n!==t;
+  for(const n of['almanac','ledger'])$(n).dataset.h='';$('roster').dataset.h='';updateUI(true)}
+document.querySelectorAll('#tools button').forEach(b=>b.onclick=()=>setTool(b.dataset.tool));
+document.querySelectorAll('#grades button').forEach(b=>b.onclick=()=>{UI.grade=+b.dataset.grade;document.querySelectorAll('#grades button').forEach(x=>x.classList.toggle('on',x===b));UI.ghostKey='';
+  // re-survey legs at new grade
+  if(UI.legs.length){const pts=[UI.legs[0][0],...UI.legs.map(L=>L[L.length-1])];UI.legs=[];for(let k=1;k<pts.length;k++){const p=survey(pts[k-1],pts[k],UI.grade,UI.pref);if(p)UI.legs.push(p)}}updateUI(true)});
+document.querySelectorAll('#prefs button').forEach(b=>b.onclick=()=>{UI.pref=b.dataset.pref;document.querySelectorAll('#prefs button').forEach(x=>x.classList.toggle('on',x===b));UI.ghostKey='';
+  if(UI.legs.length){const pts=[UI.legs[0][0],...UI.legs.map(L=>L[L.length-1])];UI.legs=[];for(let k=1;k<pts.length;k++){const p=survey(pts[k-1],pts[k],UI.grade,UI.pref);if(p)UI.legs.push(p)}}updateUI(true)});
+document.querySelectorAll('.tabs button').forEach(b=>b.onclick=()=>setTab(b.dataset.tab));
+document.querySelectorAll('.speeds button').forEach(b=>b.onclick=()=>setSpeed(+b.dataset.sp));
+$('mdl').onchange=()=>updateUI(true);$('cars').oninput=()=>updateUI(true);
+$('clrStops').onclick=()=>{UI.stops=[];updateUI(true)};
+$('buyBtn').onclick=()=>{const m=MODELS.find(x=>x.id===$('mdl').value);buyTrain(m,clamp(+$('cars').value||1,1,m.maxCars),UI.stops);UI.stops=[];updateUI(true)};
+document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(!b||!S)return;const a=b.dataset.act;
+  if(a==='commit')commitTrack();else if(a==='undo'){UI.legs.pop();if(!UI.legs.length){} }else if(a==='cancel')cancelSurvey();
+  else if(a==='repair'){if(!repair(+b.dataset.i))news('Not enough cash for repairs.','bad')}
+  else if(a==='sell'){const tr=S.trains.find(t=>t.id===+b.dataset.id);if(tr)sellTrain(tr)}
+  else if(a==='snow'){const c=snowCrewCost();if(S.cash>=c){spend('crews',c);S.crewsNext.snow=true;news(`Snow crews hired for ${moneyFull(c)}.`)}}
+  else if(a==='levee'){const c=leveeCost();if(S.cash>=c){spend('crews',c);S.crewsNext.levee=true;news(`Levee crews hired for ${moneyFull(c)}.`)}}
+  else if(a==='tele'){if(S.cash>=25000){spend('other',25000);S.telegraph=true;news('Weather Bureau telegraph subscribed. Forecasts improve from next season.','good')}}
+  else if(a==='borrow'){if(S.debt<LOAN_MAX){S.debt+=LOAN_STEP;S.cash+=LOAN_STEP}}
+  else if(a==='repay'){if(S.debt>0&&S.cash>=LOAN_STEP){S.debt-=LOAN_STEP;S.cash-=LOAN_STEP}}
+  for(const n of['almanac','ledger'])$(n).dataset.h='';updateUI(true)});
+document.addEventListener('change',e=>{if(e.target.id==='autoRep'){S.autoRepair=e.target.checked;if(S.autoRepair)autoRepair()}});
+document.addEventListener('keydown',e=>{if(!S||e.target.matches('input,select'))return;const k=e.key.toLowerCase();
+  if(k===' '){e.preventDefault();setSpeed(UI.speed?0:UI.prevSpeed||1);if(UI.speed)UI.prevSpeed=UI.speed}
+  else if('1234'.includes(k)&&k.length===1){setSpeed(+k);UI.prevSpeed=+k}
+  else if(k==='escape')cancelSurvey();else if(k==='enter'&&UI.legs.length)commitTrack();
+  else if(k==='q')setTool('inspect');else if(k==='s')setTool('station');else if(k==='t')setTool('track');else if(k==='u')setTool('upgrade');else if(k==='x')setTool('demolish');
+  updateUI(true)});
+document.addEventListener('keyup',e=>{if(e.key===' '&&UI.speed)UI.prevSpeed=UI.speed});
+window.addEventListener('resize',()=>{if(S)resize()});
+
+// ================= loop & boot =================
+const MSPD=[0,600,300,140,55];let lastT=performance.now(),acc=0;
+function frame(now){const dt=Math.min(250,now-lastT);lastT=now;
+  if(S&&!S.over&&UI.speed>0){acc+=dt;const ms=MSPD[UI.speed];let n=0;while(acc>=ms&&n<6){tick();acc-=ms;n++}if(n>=6)acc=0;UI.tickFrac=clamp(acc/ms,0,1)}
+  if(S){render();if(UI.dirtyUI){updateUI(false)}}
+  requestAnimationFrame(frame)}
+function start(seed,loaded){
+  if(loaded){S=loaded;rand=mulberry32((S.seed^S.day*2654435761)>>>0)}else{newState(seed);S.yr=newYearBook()}
+  UI.legs=[];UI.surveyStart=-1;UI.stops=[];UI.sel=-1;UI.newsDirty=true;baseKey='';
+  resize();recomputeWants();setSpeed(0);setTab('build');updateUI(true);updateNews();
+}
+let pendingSeed=Math.floor(Math.random()*1e9);
+const saved=loadGame();if(saved)$('contGame').hidden=false;
+$('seedLine').textContent=`Map seed ${pendingSeed}`;
+$('newGame').onclick=()=>{$('intro').hidden=true;start(pendingSeed);setSpeed(1)};
+$('contGame').onclick=()=>{$('intro').hidden=true;start(0,saved);setSpeed(1)};
+$('reroll').onclick=()=>{pendingSeed=Math.floor(Math.random()*1e9);$('seedLine').textContent=`Map seed ${pendingSeed}`;start(pendingSeed)};
+start(pendingSeed);
+requestAnimationFrame(frame);
+window.__IS={get S(){return S},UI,tick,buildStation,survey,commitTrack,buyTrain,MODELS,setTool,netWorth,totalPop,score,start};
+})();
+</script>
