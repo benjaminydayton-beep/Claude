@@ -58,8 +58,8 @@ canvas#map{display:block;width:100%;height:auto;touch-action:manipulation}
 .news li .d{color:var(--muted);font-family:var(--f-mono);font-size:11px;padding-top:2px}
 .news li.bad span:last-child{color:#ffb4a8}.news li.good span:last-child{color:#bfe9cf}.news li.warn span:last-child{color:#ffd99a}
 .panel{background:var(--panel);border:1px solid var(--rule);border-radius:4px;min-width:0}
-.tabs{display:grid;grid-template-columns:repeat(4,1fr);border-bottom:1px solid var(--rule)}
-.tabs button{background:none;border:0;padding:9px 4px;font-family:var(--f-display);font-weight:600;font-size:15px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid transparent}
+.tabs{display:grid;grid-template-columns:repeat(5,1fr);border-bottom:1px solid var(--rule)}
+.tabs button{background:none;border:0;padding:9px 4px;font-family:var(--f-display);font-weight:600;font-size:14px;letter-spacing:.05em;text-transform:uppercase;color:var(--muted);border-bottom:2px solid transparent}
 .tabs button.on{color:var(--paper);border-bottom-color:var(--lamp)}
 .tabbody{padding:12px;display:grid;gap:14px}
 .seg{display:flex;flex-wrap:wrap;gap:4px}
@@ -121,7 +121,7 @@ label.f{display:grid;gap:3px;font-size:12px;color:var(--muted)}
     <div class="mapframe"><canvas id="map" width="880" height="600" aria-label="Territory map"></canvas></div>
     <div class="legend">
       <span><i style="background:#c9c7a0"></i>Plains</span><span><i style="background:#6e8a5c"></i>Forest</span><span><i style="background:#a6977a"></i>Hills</span><span><i style="background:#827a74"></i>Mountains</span><span><i style="background:#5fb3c9"></i>Floodplain</span>
-      <span><i style="background:#8a6a4a"></i>Light track</span><span><i style="background:#3a3d40"></i>Ballasted</span><span><i style="background:#1a1c1e;outline:1px solid #d0d6da"></i>Engineered</span>
+      <span><i style="background:#8a6a4a"></i>Light track</span><span><i style="background:#3a3d40"></i>Ballasted</span><span><i style="background:#1a1c1e;outline:1px solid #d0d6da"></i>Engineered</span><span><i style="background:#f0a63a"></i>Your depots</span><span><i style="background:#e0703a"></i>Vance</span><span><i style="background:#4a9be0"></i>Thorne</span><span><i style="background:#d04f9a"></i>Kroll</span>
     </div>
     <div class="hoverline" id="hover">Hover the map to survey a tile.</div>
     <div class="news"><h3>Telegraph</h3><ol id="news"></ol></div>
@@ -129,7 +129,7 @@ label.f{display:grid;gap:3px;font-size:12px;color:var(--muted)}
 
   <aside class="panel">
     <nav class="tabs" role="tablist">
-      <button data-tab="build" class="on">Build</button><button data-tab="trains">Trains</button><button data-tab="almanac">Almanac</button><button data-tab="ledger">Ledger</button>
+      <button data-tab="build" class="on">Build</button><button data-tab="trains">Trains</button><button data-tab="almanac">Almanac</button><button data-tab="rivals">Rivals</button><button data-tab="ledger">Ledger</button>
     </nav>
 
     <div class="tabbody" id="tab-build">
@@ -175,6 +175,10 @@ label.f{display:grid;gap:3px;font-size:12px;color:var(--muted)}
       <div id="almanac" style="display:grid;gap:14px"></div>
     </div>
 
+    <div class="tabbody" id="tab-rivals" hidden>
+      <div id="rivals" style="display:grid;gap:12px"></div>
+    </div>
+
     <div class="tabbody" id="tab-ledger" hidden>
       <div id="ledger" style="display:grid;gap:14px"></div>
     </div>
@@ -190,6 +194,7 @@ label.f{display:grid;gap:3px;font-size:12px;color:var(--muted)}
       <li><b>Towns live on what you haul.</b> Grain feeds them, building supplies and steel make them grow, and coal keeps them alive through winter. A town that gets no passenger service shrinks, and its people move to towns that do.</li>
       <li><b>Industries follow your rails.</b> Mines and farms you serve well will expand. Ones you ignore for years shut down. New ones open near your track.</li>
       <li><b>Weather is a bet.</b> Spring floods wash out light track on floodplains and bridges. Winter snow closes hill and mountain track unless it's engineered with snow sheds or tunnels. Read the Almanac's forecast and decide whether to pay for crews.</li>
+      <li><b>Rival barons</b> arrive over the first two years. Where their depots overlap yours, the better-served railroad gets more of the cargo. You can rent running rights on each other's track, and buy their stock until you own enough to force a merger.</li>
       <li><b>Boomtowns</b> appear after silver strikes in the hills. Connect one within a year or it goes bust.</li>
     </ul>
     <p class="hint">How to start: put a <b>Station</b> next to two towns, survey <b>Track</b> between them (click the start, then the end, then Build), and order a <b>Train</b> that stops at both. Space pauses. Keys 1–4 set the speed.</p>
@@ -230,14 +235,14 @@ const SEASONS=['Spring','Summer','Autumn','Winter'];
 const MONTHS=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const SEVN=[['Mild','Wet','Severe floods'],['Fair','Hot','Drought'],['Fair','Stormy','Early frost'],['Mild','Snowy','Blizzards']];
 const CARGO={
-  pass:{name:'Passengers',rate:1.25,decay:.045,col:'#e6dccb'},
-  mail:{name:'Mail',rate:1.9,decay:.06,col:'#c7b8ec'},
-  grain:{name:'Grain',rate:1.3,decay:.05,col:'#e9c55b'},
-  lumber:{name:'Lumber',rate:1.1,decay:.012,col:'#b47c4b'},
-  coal:{name:'Coal',rate:1.15,decay:.012,col:'#545a62'},
-  ore:{name:'Ore',rate:1.2,decay:.012,col:'#b85a3c'},
-  supplies:{name:'Building supplies',rate:2.0,decay:.02,col:'#8fc1ad'},
-  steel:{name:'Steel',rate:2.4,decay:.015,col:'#a7b5c8'},
+  pass:{name:'Passengers',rate:1.88,decay:.045,col:'#e6dccb'},
+  mail:{name:'Mail',rate:2.85,decay:.06,col:'#c7b8ec'},
+  grain:{name:'Grain',rate:1.95,decay:.05,col:'#e9c55b'},
+  lumber:{name:'Lumber',rate:1.65,decay:.012,col:'#b47c4b'},
+  coal:{name:'Coal',rate:1.72,decay:.012,col:'#545a62'},
+  ore:{name:'Ore',rate:1.8,decay:.012,col:'#b85a3c'},
+  supplies:{name:'Building supplies',rate:3.0,decay:.02,col:'#8fc1ad'},
+  steel:{name:'Steel',rate:3.6,decay:.015,col:'#a7b5c8'},
 };
 const CARGO_ORDER=Object.keys(CARGO).sort((a,b)=>CARGO[b].rate-CARGO[a].rate);
 const IND={
@@ -259,12 +264,22 @@ const CAR_PRICE=1400,CAR_RUN=380,CAR_CAP=10;
 const START_DAY_MONTH=2; // March
 const END_MONTHS=(1900-1870)*12-START_DAY_MONTH; // Jan 1900
 const LOAN_STEP=25000,LOAN_MAX=400000;
-const SAVE_KEY='iron-seasons-save-v1';
+const SAVE_KEY='iron-seasons-save-v2';
+const RIVALS_DEF=[
+  {id:1,baron:'Cornelius Vance',co:'Vance Short Line',style:'skinflint',col:'#e0703a',start:45,grade:1,pref:'cheap',cadence:2,toll:25,accept:-40,rel:10,
+   blurb:'Builds cheap and fast, runs too many trains and never pays for weather crews. Will sell you anything.'},
+  {id:2,baron:'Augusta Thorne',co:'Thorne Mountain Railway',style:'engineer',col:'#4a9be0',start:300,grade:2,pref:'safe',cadence:4,toll:45,accept:-10,rel:0,
+   blurb:'Careful, weatherproof lines and fast engines. Hires crews, hardens risky track and defends its stock.'},
+  {id:3,baron:'Silas Kroll',co:'Kroll Consolidated',style:'raider',col:'#d04f9a',start:660,grade:2,pref:'cheap',cadence:3,toll:90,accept:35,rel:-20,
+   blurb:'Goes after the towns you already serve and plants depots beside yours. Rarely shares track.'},
+];
+const RD=id=>RIVALS_DEF.find(d=>d.id===id);
 const GOALS=[
-  {id:'link',text:'Give 6 towns regular passenger service at once',test:()=>S.towns.filter(t=>!t.ghost&&isConnected(t)).length>=6},
+  {id:'link',text:'Give 6 towns regular passenger service at once',test:()=>S.towns.filter(t=>!t.ghost&&servedBy(t).includes(0)).length>=6},
   {id:'pop',text:'Grow the territory to 40,000 people',test:()=>totalPop()>=40000},
   {id:'worth',text:'Reach a net worth of $1,500,000',test:()=>netWorth()>=1.5e6},
   {id:'boom',text:'Keep a boomtown alive past its deadline',test:()=>S.towns.some(t=>t.boomSaved)},
+  {id:'takeover',text:'Take over a rival railroad (merger or auction)',test:()=>S.rivals.some(r=>r.merged)},
   {id:'nofreeze',text:'Run a winter with zero snowbound track while serving the mountains',test:()=>S.flags.cleanWinter},
 ];
 
@@ -296,7 +311,8 @@ function newState(seed){
   S={seed,day:0,tiles:[],rivers:[],towns:[],inds:[],stations:[],trains:[],adj:[],cash:220000,debt:0,
      season:0,sev:0,next:null,crewsNext:{},crewsNow:{},telegraph:false,autoRepair:true,news:[],
      yr:{},last:null,hist:[],econ:{factor:1,until:-1,rateAdd:0},flags:{cleanWinter:false},goalsMet:{},
-     nextTrain:1,over:false,neg:0,rngState:seed};
+     nextTrain:1,over:false,neg:0,rngState:seed,noCtr:{},rights:{},proposals:[],nextProp:1};
+  S.rivals=RIVALS_DEF.map(d=>({id:d.id,cash:200000,debt:0,rel:d.rel,started:false,dead:false,merged:false,nextBuild:d.start,pct:0,premium:0,revY:0,costY:0,capY:0,lastProfit:0,neg:0,crews:{},defended:-9999,hq:-1}));
   for(let i=0;i<N;i++)S.adj.push([]);
   let tries=0;
   do{genTerrain();tries++}while(!terrainOK()&&tries<8);
@@ -321,7 +337,7 @@ function genTerrain(){
     const v=(e[i]-mn)/(mx-mn);let t=v<.17?T.WATER:v<.5?T.PLAINS:v<.66?T.HILLS:T.MOUNT;
     const m=mo(X(i),Y(i));
     if((t===T.PLAINS&&m>.6)||(t===T.HILLS&&m>.68&&v<.6))t=T.FOREST;
-    S.tiles.push({t,e:v,river:false,flood:false,grade:0,st:-1,town:-1,ind:-1,dmg:0,closed:false,rep:0});
+    S.tiles.push({t,e:v,river:false,flood:false,grade:0,st:-1,town:-1,ind:-1,dmg:0,closed:false,rep:0,own:0});
   }
   // rivers
   const srcs=[];for(let i=0;i<N;i++)if(S.tiles[i].e>.72)srcs.push(i);
@@ -358,7 +374,7 @@ function addTown(tile,pop,boom){
   const id=S.towns.length,offs=[];const rr=mulberry32(tile*7919+id);
   for(let k=0;k<44;k++){const a=rr()*Math.PI*2,r=Math.sqrt(rr())*(.25+k*.03);offs.push([Math.cos(a)*r,Math.sin(a)*r,.55+rr()*.5])}
   const t={id,name:townName(boom),tile,pop,ghost:false,offs,recv:{grain:0,supplies:0,steel:0,coal:0},sat:{grain:0,supplies:0,steel:0,coal:0},
-    connDay:-9999,boom:boom?S.day+365:0,boomSaved:false,trend:0,founded:S.day,hist:[pop]};
+    connDay:-9999,connBy:{},boom:boom?S.day+365:0,boomSaved:false,trend:0,founded:S.day,hist:[pop]};
   S.towns.push(t);S.tiles[tile].town=id;return t;
 }
 function placeTowns(){
@@ -424,18 +440,30 @@ const blocked=i=>S.tiles[i].dmg!==0||S.tiles[i].closed;
 function hasTrack(i){return S.tiles[i].grade>0||S.tiles[i].st>=0}
 function addEdge(a,b){if(!S.adj[a].includes(b))S.adj[a].push(b);if(!S.adj[b].includes(a))S.adj[b].push(a)}
 
+// ================= ownership =================
+const ownOf=i=>S.tiles[i].own|0;
+const rv=o=>S.rivals.find(r=>r.id===o);
+const coCol=o=>o===0?'#f0a63a':RD(o).col;
+const coName=o=>o===0?'your line':RD(o).co;
+function rightsToll(owner,user){const v=S.rights[owner+'>'+user];return v==null?null:v}
+function usable(o,i){const w=ownOf(i);return w===o||rightsToll(w,o)!==null}
+function cashOf(o){return o===0?S.cash:rv(o).cash}
+function payCo(o,amt,cat){if(o===0){if(amt>=0)earn(cat,amt);else spend(cat,-amt);return}const r=rv(o);r.cash+=amt;if(amt>=0)r.revY+=amt;else if(cat==='construction'||cat==='equipment')r.capY=(r.capY||0)-amt;else r.costY-=amt}
+function servedBy(t){return[0,1,2,3].filter(o=>t.connBy&&S.day-(t.connBy[o]??-9999)<75)}
+function layTrack(legs,g,o){for(const L of legs){for(let k=0;k<L.length;k++){const i=L[k],tl=S.tiles[i];if(!hasTrack(i)){tl.grade=g;tl.own=o}if(k)addEdge(L[k-1],i)}}}
+
 // ================= surveying (A*) =================
-function survey(from,to,g,pref){
+function survey(from,to,g,pref,owner=0,foreign='penalty'){
   const gs=new Float64Array(N).fill(Infinity),came=new Int32Array(N).fill(-1),done=new Uint8Array(N);
   const h=new Heap();gs[from]=0;h.push(0,from);
-  const pass=i=>{const t=S.tiles[i];return t.t!==T.WATER&&(t.ind<0)};
+  const pass=i=>{const t=S.tiles[i];if(t.t===T.WATER||t.ind>=0)return false;if(foreign==='block'&&hasTrack(i)&&ownOf(i)!==owner)return false;return true};
   if(!pass(to)||!pass(from))return null;
   while(h.size){const[,c]=h.pop();if(done[c])continue;done[c]=1;if(c===to)break;
     const cx=X(c),cy=Y(c);
     for(const[dx,dy]of DIRS){const nx=cx+dx,ny=cy+dy;if(!inb(nx,ny))continue;const j=idx(nx,ny);if(done[j]||!pass(j))continue;
       const diag=dx&&dy;if(diag&&(!pass(idx(cx+dx,cy))||!pass(idx(cx,cy+dy))))continue;
       const tl=S.tiles[j];let sc;
-      if(hasTrack(j))sc=150;
+      if(hasTrack(j)){const w=ownOf(j);sc=w===owner?150:(rightsToll(w,owner)!==null?700:3500)}
       else{sc=tileCost(j,g);
         if(pref==='safe')sc+=floodVuln(tl,g)*9000+(snowThresh(tl,g)<=1?7000:snowThresh(tl,g)===2?3000:0);
         if(pref==='fast')sc+=(1/tileFactorFor(tl,g)-1)*7000;
@@ -449,37 +477,36 @@ function survey(from,to,g,pref){
 function tileFactorFor(tl,g){let f=1;if(tl.t===T.HILLS)f=[0,.68,.8,.95][g];else if(tl.t===T.MOUNT)f=[0,.42,.58,.92][g];if(tl.river)f*=g===1?.75:.92;if(g===1)f*=.85;return f}
 function legsTiles(){const out=[];for(const L of UI.legs){for(let k=0;k<L.length;k++){if(out.length&&k===0&&out[out.length-1]===L[0])continue;out.push(L[k])}}return out}
 function planSummary(){
-  const g=UI.grade;let cost=0,newT=0,bridges=0,flood=0,snow=[0,0,0],tunnels=0;const seen=new Set();
-  for(const L of UI.legs)for(const i of L){if(seen.has(i))continue;seen.add(i);const tl=S.tiles[i];if(hasTrack(i))continue;
+  const g=UI.grade;let cost=0,newT=0,bridges=0,flood=0,snow=[0,0,0],tunnels=0;const seen=new Set(),foreign={};
+  for(const L of UI.legs)for(const i of L){if(seen.has(i))continue;seen.add(i);const tl=S.tiles[i];if(hasTrack(i)){const w=ownOf(i);if(w)foreign[w]=(foreign[w]||0)+1;continue}
     newT++;cost+=tileCost(i,g);if(tl.river)bridges++;if(floodVuln(tl,g)>0)flood++;const s=snowThresh(tl,g);if(s<=2)snow[s]++;if(tl.t===T.MOUNT&&g===3)tunnels++}
-  return{cost,newT,bridges,flood,snow,tunnels,len:legsTiles().length};
+  return{cost,newT,bridges,flood,snow,tunnels,foreign,len:legsTiles().length};
 }
 function commitTrack(){
   const sm=planSummary();if(!sm.newT&&legsTiles().length<2)return;
   if(S.cash<sm.cost){news(`Not enough cash: that survey costs ${moneyFull(sm.cost)}.`,'bad');return}
-  spend('construction',sm.cost);
-  for(const L of UI.legs){for(let k=0;k<L.length;k++){const i=L[k];const tl=S.tiles[i];if(!hasTrack(i))tl.grade=UI.grade;if(k)addEdge(L[k-1],i)}}
+  spend('construction',sm.cost);layTrack(UI.legs,UI.grade,0);
   news(`Laid ${sm.newT} tiles of ${GRADE[UI.grade].toLowerCase()} track for ${moneyFull(sm.cost)}.`);
   UI.legs=[];UI.surveyStart=-1;graphChanged();
 }
 
 // ================= stations =================
 function stationCost(i){return 6000+Math.round(landCost(i)*2/100)*100}
-function buildStation(i){
-  const tl=S.tiles[i];
-  if(tl.t===T.WATER||tl.ind>=0)return news('Stations need dry land that isn’t an industry site.','bad');
-  if(tl.st>=0)return;
-  if(S.stations.some(s=>!s.dead&&cheb(s.tile,i)<3))return news('Too close to another station (keep 3 tiles apart).','bad');
-  const c=stationCost(i);if(S.cash<c)return news(`Need ${moneyFull(c)} for a station there.`,'bad');
-  spend('construction',c);
+function buildStation(i,o=0){
+  const tl=S.tiles[i],say=o===0;
+  if(tl.t===T.WATER||tl.ind>=0){if(say)news('Stations need dry land that isn’t an industry site.','bad');return -1}
+  if(tl.st>=0||(tl.grade>0&&ownOf(i)!==o)){if(say)news('Another railroad already has track or a depot on that tile.','bad');return -1}
+  if(S.stations.some(s=>!s.dead&&s.owner===o&&cheb(s.tile,i)<3)){if(say)news('Too close to another of your stations (keep 3 tiles apart).','bad');return -1}
+  const c=stationCost(i);if(cashOf(o)<c){if(say)news(`Need ${moneyFull(c)} for a station there.`,'bad');return -1}
+  payCo(o,-c,'construction');
   let near=null,bd=99;for(const t of S.towns){if(t.ghost)continue;const d=cheb(t.tile,i);if(d<bd){bd=d;near=t}}
   let name=near&&bd<=3?near.name:(near&&bd<=8?near.name+' Junction':TER_NAME[tl.t]+' Siding');
-  if(S.stations.some(s=>s.name===name))name+=' '+(S.stations.length+1);
-  const st={id:S.stations.length,name,tile:i,stock:{},lastPick:-9999,lastSpeed:2.5,rating:0,wants:[],handled6:0,dead:false};
-  S.stations.push(st);tl.st=st.id;
-  // auto-connect to adjacent track
-  for(const[dx,dy]of DIRS){const x=X(i)+dx,y=Y(i)+dy;if(inb(x,y)&&hasTrack(idx(x,y))&&S.tiles[idx(x,y)].grade>0)addEdge(i,idx(x,y))}
-  news(`${name} station opened (${moneyFull(c)}).`);graphChanged();
+  if(S.stations.some(s=>s.name===name))name+=o?` (${RD(o).baron.split(' ')[1]})`:' '+(S.stations.length+1);
+  const st={id:S.stations.length,owner:o,name,tile:i,stock:{},lastPick:-9999,lastSpeed:2.5,rating:0,wants:[],handled6:0,dead:false};
+  S.stations.push(st);tl.st=st.id;tl.own=o;
+  for(const[dx,dy]of DIRS){const x=X(i)+dx,y=Y(i)+dy;if(!inb(x,y))continue;const j=idx(x,y);if(S.tiles[j].grade>0&&ownOf(j)===o)addEdge(i,j)}
+  if(say){news(`${name} station opened (${moneyFull(c)}).`);for(const s of S.stations)if(!s.dead&&s.owner&&cheb(s.tile,i)<=3)rv(s.owner).rel-=5}
+  graphChanged();return st.id;
 }
 function catchTowns(st){return S.towns.filter(t=>!t.ghost&&cheb(t.tile,st.tile)<=3)}
 function catchInds(st){return S.inds.filter(d=>!d.closed&&cheb(d.tile,st.tile)<=2)}
@@ -499,35 +526,41 @@ function recomputeWants(){
 // ================= trains =================
 function unlocked(){const y=date().y;return MODELS.filter(m=>m.year<=y)}
 function trainCost(m,cars){return m.price+cars*CAR_PRICE}
-function buyTrain(m,cars,stops){
-  const c=trainCost(m,cars);if(S.cash<c)return news(`A ${m.name} with ${cars} cars costs ${moneyFull(c)}.`,'bad');
-  if(new Set(stops).size<2)return news('A train needs at least two different stations.','bad');
-  spend('equipment',c);
-  const tr={id:S.nextTrain++,model:m.id,cars,stops:[...stops],si:0,state:'load',timer:1,path:[S.stations[stops[0]].tile],k:0,frac:0,sPrev:0,sNow:0,pathPrev:null,
-    cargo:[],profitY:0,profitL:null,bought:S.day,note:'',value:c};
+function buyTrain(m,cars,stops,o=0){
+  const c=trainCost(m,cars),say=o===0;
+  if(cashOf(o)<c){if(say)news(`A ${m.name} with ${cars} cars costs ${moneyFull(c)}.`,'bad');return null}
+  if(new Set(stops).size<2){if(say)news('A train needs at least two different stations.','bad');return null}
+  payCo(o,-c,'equipment');
+  const no=S.noCtr[o]=(S.noCtr[o]||0)+1;
+  const tr={id:S.nextTrain++,no,owner:o,model:m.id,cars,stops:[...stops],si:0,state:'load',timer:1,path:[S.stations[stops[0]].tile],k:0,frac:0,sPrev:0,sNow:0,pathPrev:null,
+    cargo:[],profitY:0,profitL:null,bought:S.day,note:'',value:c,lostSince:-1};
   S.trains.push(tr);recomputeWants();
-  news(`No. ${tr.id} (${m.name}) dispatched from ${S.stations[stops[0]].name}.`);
+  if(say)news(`No. ${no} (${m.name}) dispatched from ${S.stations[stops[0]].name}.`);return tr;
 }
-function sellTrain(tr){const v=trainValue(tr);earn('sales',v);S.trains=S.trains.filter(t=>t!==tr);recomputeWants();news(`No. ${tr.id} sold for ${moneyFull(v)}.`)}
+function sellTrain(tr){const v=trainValue(tr);earn('sales',v);S.trains=S.trains.filter(t=>t!==tr);recomputeWants();news(`No. ${tr.no} sold for ${moneyFull(v)}.`)}
 function trainValue(tr){const age=(S.day-tr.bought)/360;return Math.round(tr.value*Math.max(.2,.65-age*.03))}
 const modelOf=tr=>MODELS.find(m=>m.id===tr.model);
 function trainTile(tr){return tr.path[Math.min(tr.k,tr.path.length-1)]}
-function routeTrain(from,to,avoid){
+function routeTrain(from,to,avoid,o=0){
   if(from===to)return[from];
   const d=new Float64Array(N).fill(Infinity),came=new Int32Array(N).fill(-1);const h=new Heap();d[from]=0;h.push(0,from);
   while(h.size){const[dc,c]=h.pop();if(dc>d[c])continue;if(c===to)break;
-    for(const j of S.adj[c]){if(avoid&&blocked(j))continue;const len=(X(j)!==X(c)&&Y(j)!==Y(c))?1.414:1;const nd=dc+len/tileFactor(j);if(nd<d[j]){d[j]=nd;came[j]=c;h.push(nd,j)}}}
+    for(const j of S.adj[c]){if(!usable(o,j))continue;if(avoid&&blocked(j))continue;const len=(X(j)!==X(c)&&Y(j)!==Y(c))?1.414:1;const nd=dc+len/tileFactor(j);if(nd<d[j]){d[j]=nd;came[j]=c;h.push(nd,j)}}}
   if(d[to]===Infinity)return null;const p=[];let c=to;while(c!==-1){p.push(c);if(c===from)break;c=came[c]}return p.reverse();
 }
 function planLeg(tr){
-  const here=trainTile(tr),dest=S.stations[tr.stops[tr.si]].tile;
-  let p=routeTrain(here,dest,true);let note='';
-  if(!p){p=routeTrain(here,dest,false);if(p)note='held';}
+  const here=trainTile(tr),dest=S.stations[tr.stops[tr.si]].tile,o=tr.owner|0;
+  let p=routeTrain(here,dest,true,o);let note='';
+  if(!p){p=routeTrain(here,dest,false,o);if(p)note='held';}
   tr.pathPrev=null;
-  if(!p){tr.path=[here];tr.k=0;tr.frac=0;tr.state='lost';tr.note='No track to '+S.stations[tr.stops[tr.si]].name;return}
-  tr.path=p;tr.k=0;tr.frac=0;tr.sPrev=tr.sNow=0;tr.state='move';tr.note=note;
+  if(!p){tr.path=[here];tr.k=0;tr.frac=0;tr.state='lost';if(tr.lostSince<0)tr.lostSince=S.day;tr.note='No usable track to '+S.stations[tr.stops[tr.si]].name;return}
+  tr.lostSince=-1;tr.path=p;tr.k=0;tr.frac=0;tr.sPrev=tr.sNow=0;tr.state='move';tr.note=note;
 }
-function graphChanged(){for(const tr of S.trains){if(tr.state==='move'||tr.state==='lost'||tr.state==='wait'){if(tr.frac>0&&tr.k+1<tr.path.length&&!hasTrack(tr.path[tr.k+1])){tr.frac=0}planLeg(tr)}}recomputeWants();UI.dirtyUI=true}
+function graphChanged(){
+  for(const tr of S.trains){const here=trainTile(tr);
+    if(!hasTrack(here)){tr.path=[S.stations[tr.stops[tr.si]].tile];tr.k=0;tr.frac=0;tr.state='load';tr.timer=1;tr.pathPrev=null;continue}
+    if(tr.state==='move'||tr.state==='lost'||tr.state==='wait'){if(tr.frac>0&&tr.k+1<tr.path.length&&!hasTrack(tr.path[tr.k+1])){tr.frac=0}planLeg(tr)}}
+  recomputeWants();UI.dirtyUI=true}
 function stepTrain(tr){
   const m=modelOf(tr);
   if(tr.state==='load'){tr.timer--;if(tr.timer<=0){tr.si=(tr.si+1)%tr.stops.length;planLeg(tr)}return}
@@ -540,16 +573,17 @@ function stepTrain(tr){
     const nx=tr.path[tr.k+1];
     if(blocked(nx)){
       // try a detour
-      const alt=routeTrain(tr.path[tr.k],S.stations[tr.stops[tr.si]].tile,true);
+      const alt=routeTrain(tr.path[tr.k],S.stations[tr.stops[tr.si]].tile,true,tr.owner|0);
       if(alt&&alt.length>1&&!blocked(alt[1])){tr.path=alt;tr.k=0;tr.frac=0;tr.pathPrev=null;continue}
       tr.state='wait';const tl=S.tiles[nx];tr.note=tl.closed?'Snowbound':'Held at a washout';tr.frac=0;break}
     const cur=tr.path[tr.k];const len=(X(nx)!==X(cur)&&Y(nx)!==Y(cur))?1.414:1;const el=len/tileFactor(nx,m);
     const rem=(1-tr.frac)*el;
-    if(mv>=rem){mv-=rem;tr.k++;tr.frac=0}else{tr.frac+=mv/el;mv=0}
+    if(mv>=rem){mv-=rem;tr.k++;tr.frac=0;enterTile(tr)}else{tr.frac+=mv/el;mv=0}
   }
   tr.sNow=tr.k+tr.frac;
   if(tr.state==='move'&&tr.note!=='held')tr.note='';
 }
+function enterTile(tr){const i=tr.path[tr.k],w=ownOf(i),o=tr.owner|0;if(w===o)return;const toll=rightsToll(w,o);if(!toll)return;payCo(o,-toll,'tollsPaid');payCo(w,toll,'tolls');tr.profitY-=toll}
 function deliverTo(st,c,amt){
   const inds=catchInds(st).filter(d=>(IND[d.type].inp||[]).includes(c));
   if(inds.length){const d=inds[0];d.pending[c]=(d.pending[c]||0)+amt;return}
@@ -557,26 +591,25 @@ function deliverTo(st,c,amt){
   // nearest town gets it
   tws.sort((a,b)=>cheb(a.tile,st.tile)-cheb(b.tile,st.tile));const t=tws[0];
   if(c in t.recv)t.recv[c]+=amt;
-  if(c==='pass'||c==='mail')t.connDay=S.day;
+  if(c==='pass'||c==='mail'){t.connDay=S.day;t.connBy[st.owner|0]=S.day}
 }
 function arrive(tr){
-  const st=S.stations[tr.stops[tr.si]],m=modelOf(tr);
+  const st=S.stations[tr.stops[tr.si]],m=modelOf(tr),o=tr.owner|0;
   tr.state='load';tr.timer=1;tr.note='';
   let rev=0;
   tr.cargo=tr.cargo.filter(c=>{if(c.to!==st.id)return true;
     const dist=Math.max(1,eucl(S.stations[c.from].tile,st.tile));const days=S.day-c.day;const fast=1+dist/2.2;
     const tf=Math.max(.25,1-Math.max(0,days-fast)*CARGO[c.type].decay*.6);
     const pay=c.amt*CARGO[c.type].rate*dist*tf*S.econ.factor;rev+=pay;
-    S.yr.rev[c.type]=(S.yr.rev[c.type]||0)+pay;deliverTo(st,c.type,c.amt);st.handled6+=c.amt;return false});
-  if(rev){S.cash+=rev;tr.profitY+=rev}
-  // load
+    if(o===0)S.yr.rev[c.type]=(S.yr.rev[c.type]||0)+pay;deliverTo(st,c.type,c.amt);st.handled6+=c.amt;return false});
+  if(rev){if(o===0)S.cash+=rev;else{const r=rv(o);r.cash+=rev;r.revY+=rev}tr.profitY+=rev}
   const acc=tr.stops.map(id=>accepts(S.stations[id]));
   let room=tr.cars*CAR_CAP-tr.cargo.reduce((s,c)=>s+c.amt,0);
   for(const type of CARGO_ORDER){if(room<1)break;const have=Math.floor(st.stock[type]||0);if(have<1)continue;
     let to=-1;for(let k=1;k<tr.stops.length;k++){const j=(tr.si+k)%tr.stops.length;if(tr.stops[j]!==st.id&&acc[j].has(type)){to=tr.stops[j];break}}
     if(to<0)continue;const amt=Math.min(have,room);st.stock[type]-=amt;room-=amt;st.handled6+=amt;
     tr.cargo.push({type,amt,from:st.id,to,day:S.day});
-    if(type==='pass'||type==='mail')for(const t of catchTowns(st))t.connDay=S.day;
+    if(type==='pass'||type==='mail')for(const t of catchTowns(st)){t.connDay=S.day;t.connBy[o]=S.day}
   }
   st.lastPick=S.day;st.lastSpeed=m.speed;
 }
@@ -594,8 +627,9 @@ function dailyProduction(){
   // ratings
   for(const st of S.stations){if(st.dead){st.rating=0;continue}if(!st.wants.length||st.lastPick<-999){st.rating=st.wants.length?.35:0;continue}
     const since=S.day-st.lastPick;st.rating=clamp(.3+.55*Math.max(0,1-since/45)+.1*st.lastSpeed/5,0,.95)}
-  const give=(tile,r,type,amt)=>{let sts=S.stations.filter(s=>!s.dead&&s.rating>0&&cheb(s.tile,tile)<=r&&s.wants.includes(type));if(!sts.length)return 0;
-    let moved=0;for(const s of sts){const a=amt/sts.length*s.rating;s.stock[type]=Math.min(400,(s.stock[type]||0)+a);moved+=a}return moved};
+  const give=(tile,r,type,amt)=>{const sts=S.stations.filter(s=>!s.dead&&s.rating>0&&cheb(s.tile,tile)<=r&&s.wants.includes(type));if(!sts.length)return 0;
+    let best=0,sw=0;for(const s of sts){best=Math.max(best,s.rating);sw+=s.rating*s.rating}
+    const tot=amt*best;for(const s of sts){const a=tot*s.rating*s.rating/sw;s.stock[type]=Math.min(400,(s.stock[type]||0)+a)}return tot};
   for(const t of S.towns){if(t.ghost)continue;const f=seasonal('pass');give(t.tile,3,'pass',t.pop/40/30*f);give(t.tile,3,'mail',t.pop/110/30)}
   for(const d of S.inds){if(d.closed)continue;const def=IND[d.type];let amt;
     if(def.inp){ // processor
@@ -615,30 +649,36 @@ function rollSeason(season){
   const acc=S.telegraph?.88:.62;let fc=sev;if(rand()>acc){fc=pick([0,1,2].filter(v=>v!==sev))}
   return{season,sev,fc,acc};
 }
+function crewOf(o,k){if(o===0)return!!S.crewsNow[k];const r=rv(o);return!!(r&&r.crews[k])}
 function startSeason(){
   const n=S.next;S.season=n.season;S.sev=n.sev;S.crewsNow=S.crewsNext;S.crewsNext={};
+  for(const r of activeRivals()){r.crews={};const st=RD(r.id).style;const want=st==='engineer'?1:st==='raider'?2:9;
+    if(n.fc>=want&&(S.season===3||S.season===0)){const k=S.season===3?'snow':'levee';const c=k==='snow'?snowCrewCost(r.id):leveeCost(r.id);if(r.cash>c*2){r.cash-=c;r.costY+=c;r.crews[k]=true}}}
   const name=SEVN[S.season][S.sev];
   news(`${SEASONS[S.season]} arrives: ${name.toLowerCase()}. The Almanac had called it “${SEVN[n.season][n.fc].toLowerCase()}”.`,S.sev===2?'bad':S.sev===1?'warn':'');
-  // clear snow
   if(S.season===0){let c=0;for(const t of S.tiles)if(t.closed){t.closed=false;c++}if(c)news(`The thaw reopens ${c} snowbound track tiles.`,'good')}
   if(S.season===3){
-    let c=0,mtnServed=false;const crew=S.crewsNow.snow?1:0;
-    for(let i=0;i<N;i++){const t=S.tiles[i];if(t.grade>0){if(t.t===T.MOUNT||t.t===T.HILLS)mtnServed=true;if(S.sev>=snowThresh(t,t.grade)+crew){t.closed=true;c++}}}
-    if(c)news(`Snow closes ${c} track tiles in the high country until spring.`,'bad');
-    S.flags.winterWatch=mtnServed&&c===0;
+    let c=0,mine=0,mtnServed=false;
+    for(let i=0;i<N;i++){const t=S.tiles[i];if(t.grade>0){const o=t.own|0;if(o===0&&(t.t===T.MOUNT||t.t===T.HILLS))mtnServed=true;
+      if(S.sev>=snowThresh(t,t.grade)+(crewOf(o,'snow')?1:0)){t.closed=true;c++;if(o===0)mine++}}}
+    if(mine)news(`Snow closes ${mine} of your track tiles in the high country until spring.`,'bad');
+    if(c>mine)news(`Snow closes ${c-mine} tiles of rival track.`);
+    S.flags.winterWatch=mtnServed&&mine===0;
   }
   if(S.season===0&&S.flags.winterWatch){S.flags.cleanWinter=true}
   S.next=rollSeason((S.season+1)%4);
 }
 function floodCheck(){
   if(S.season!==0)return;
-  const pm=[.04,.22,.5][S.sev]*(S.crewsNow.levee?.45:1);let c=0;
-  for(let i=0;i<N;i++){const t=S.tiles[i];if(t.grade>0&&t.dmg===0){const v=floodVuln(t,t.grade);if(v>0&&rand()<v*pm){t.dmg=-1;c++}}}
-  if(c){news(`Floodwater washes out ${c} track tile${c>1?'s':''}.`,'bad');autoRepair();graphChanged()}
+  const base=[.04,.22,.5][S.sev];let c=0,mine=0;
+  for(let i=0;i<N;i++){const t=S.tiles[i];if(t.grade>0&&t.dmg===0){const o=t.own|0,v=floodVuln(t,t.grade);if(v>0&&rand()<v*base*(crewOf(o,'levee')?.45:1)){t.dmg=-1;c++;if(!o)mine++}}}
+  if(mine)news(`Floodwater washes out ${mine} of your track tile${mine>1?'s':''}.`,'bad');
+  if(c>mine)news(`Floods wash out ${c-mine} tiles of rival track.`);
+  if(c){autoRepair();graphChanged()}
 }
 function repairCost(i){return Math.round(tileCost(i,S.tiles[i].grade)*.35/100)*100}
-function repair(i){const c=repairCost(i);if(S.cash<c)return false;spend('repairs',c);S.tiles[i].dmg=ri(8,16);return true}
-function autoRepair(){if(!S.autoRepair)return;for(let i=0;i<N;i++)if(S.tiles[i].dmg===-1)repair(i)}
+function repair(i){const o=ownOf(i),c=repairCost(i);if(cashOf(o)<c)return false;payCo(o,-c,'repairs');S.tiles[i].dmg=ri(8,16);return true}
+function autoRepair(){if(!S.autoRepair)return;for(let i=0;i<N;i++)if(S.tiles[i].dmg===-1&&ownOf(i)===0)repair(i)}
 
 // ================= frontier life =================
 function isConnected(t){return S.day-t.connDay<75}
@@ -711,20 +751,149 @@ function econEvents(){
   if(S.econ.until>0&&S.day>=S.econ.until){S.econ={factor:1,until:-1,rateAdd:0};news('Markets recover. Rates return to normal.','good')}
 }
 
+// ================= rival railroads =================
+function activeRivals(){return S.rivals.filter(r=>!r.dead&&r.started)}
+function ownStations(o){return S.stations.filter(s=>!s.dead&&(s.owner|0)===o)}
+function freeNear(tile,o,rad=2){
+  const c=[];for(let dy=-rad;dy<=rad;dy++)for(let dx=-rad;dx<=rad;dx++){const x=X(tile)+dx,y=Y(tile)+dy;if(!inb(x,y))continue;const i=idx(x,y),t=S.tiles[i];
+    if(t.t===T.WATER||t.ind>=0||t.st>=0||t.town>=0||t.river||hasTrack(i))continue;if(S.stations.some(s=>!s.dead&&s.owner===o&&cheb(s.tile,i)<3))continue;c.push(i)}
+  if(!c.length)return -1;c.sort((a,b)=>cheb(a,tile)-cheb(b,tile)||S.tiles[a].e-S.tiles[b].e);return c[0];
+}
+function aiModel(r){const ms=unlocked(),st=RD(r.id).style;if(st==='skinflint')return ms.reduce((a,b)=>a.price<=b.price?a:b);if(st==='engineer')return ms.reduce((a,b)=>b.speed>a.speed?b:a);return ms[ms.length-1]}
+function aiStart(r){
+  const d=RD(r.id);const taken=S.rivals.filter(x=>x.hq>=0).map(x=>x.hq);
+  let pool=S.towns.filter(t=>!t.ghost&&!taken.includes(t.id));
+  if(d.style!=='raider')pool=pool.filter(t=>!ownStations(0).some(s=>cheb(s.tile,t.tile)<=3));
+  pool.sort((a,b)=>b.pop-a.pop);
+  for(const t of pool.slice(0,6)){const i=freeNear(t.tile,r.id);if(i<0)continue;const sid=buildStation(i,r.id);
+    if(sid>=0){r.hq=t.id;r.started=true;r.nextBuild=S.day+30;news(`${d.baron} charters the ${d.co}, based at ${t.name}. ${d.blurb}`,'warn');return}}
+  r.nextBuild=S.day+90;
+}
+function prodNear(tile){const p={};for(const t of S.towns)if(!t.ghost&&cheb(t.tile,tile)<=3){p.pass=(p.pass||0)+t.pop/40;p.mail=(p.mail||0)+t.pop/110}
+  for(const d of S.inds)if(!d.closed&&!IND[d.type].inp&&cheb(d.tile,tile)<=2){const c=IND[d.type].out;p[c]=(p[c]||0)+IND[d.type].base*d.mult*(d.type==='farm'?.9:1)}return p}
+function accNear(tile){const a=new Set();for(const t of S.towns)if(!t.ghost&&cheb(t.tile,tile)<=3){['pass','mail','grain','supplies','coal'].forEach(c=>a.add(c));if(t.pop>=1000)a.add('steel')}
+  for(const d of S.inds)if(!d.closed&&cheb(d.tile,tile)<=2)for(const c of IND[d.type].inp||[])a.add(c);return a}
+function estLine(a,b,capPerYr){ // yearly revenue estimate between two tiles
+  const dist=Math.max(1,eucl(a,b)),pa=prodNear(a),pb=prodNear(b),aa=accNear(a),ab=accNear(b);let units=0,rev=0;
+  for(const[c,v]of Object.entries(pa))if(ab.has(c)){const u=v*12*.6;units+=u;rev+=u*CARGO[c].rate*dist}
+  for(const[c,v]of Object.entries(pb))if(aa.has(c)){const u=v*12*.6;units+=u;rev+=u*CARGO[c].rate*dist}
+  if(units>capPerYr)rev*=capPerYr/units;return rev}
+function aiExpand(r){
+  const d=RD(r.id),own=ownStations(r.id);if(!own.length)return;
+  const mine=ownStations(0),cand=[];
+  for(const t of S.towns){if(t.ghost||own.some(s=>cheb(s.tile,t.tile)<=3))continue;
+    let sc=Math.sqrt(t.pop)/8;if(t.boom&&!t.boomSaved)sc+=3;
+    const yours=mine.some(s=>cheb(s.tile,t.tile)<=3);
+    if(d.style==='raider')sc*=yours?2.4:.8;else if(yours)sc*=.7;
+    cand.push({tile:t.tile,sc,kind:'town',name:t.name})}
+  if(d.style!=='raider')for(const ind of S.inds){if(ind.closed||IND[ind.type].inp||own.some(s=>cheb(s.tile,ind.tile)<=2))continue;
+    const out=IND[ind.type].out;if(!own.some(s=>accepts(s).has(out)))continue;
+    cand.push({tile:ind.tile,sc:IND[ind.type].base*ind.mult/22,kind:'ind',out,name:'the '+IND[ind.type].name.toLowerCase()+' near '+nearName(ind.tile)})}
+  const m0=aiModel(r),cars0=Math.min(m0.maxCars,d.style==='skinflint'?5:4);
+  for(const c of cand){const pool=c.kind==='ind'?own.filter(s=>accepts(s).has(c.out)):own;let bs=null,bd=99;
+    for(const s of pool){const dd=cheb(s.tile,c.tile);if(dd<bd){bd=dd;bs=s}}c.src=bs;c.val=-1;
+    if(!bs||bd<4||bd>16)continue;
+    const trips=360/(bd*2/m0.speed+2),rev=estLine(bs.tile,c.tile,trips*cars0*CAR_CAP);
+    const opex=m0.run+cars0*CAR_RUN+1500+bd*[0,80,170,280][d.grade];const capex=bd*[0,1700,3200,7000][d.grade]+7000+trainCost(m0,cars0);
+    c.val=(rev-opex)/capex*(1+c.sc*.15)}
+  cand.sort((a,b)=>b.val-a.val);
+  const lines=S.trains.filter(t=>t.owner===r.id).length;
+  const loanRoom=lines<2?Math.max(0,60000-r.debt):r.ema>2500?Math.max(0,120000-r.debt):0;
+  if(lines>=2&&r.ema<=400)return;
+  const budget=r.cash+loanRoom-30000;
+  for(const c of cand.slice(0,4)){if(c.val<.06)break;
+    const at=freeNear(c.tile,r.id,2);if(at<0)continue;
+    let p=survey(c.src.tile,at,d.grade,d.pref,r.id,'block');
+    if(!p)p=survey(c.src.tile,at,d.grade,d.pref,r.id,'penalty');
+    if(!p)continue;
+    let tc=0;for(const i of p)if(!hasTrack(i))tc+=tileCost(i,d.grade);
+    const m=aiModel(r),cars=Math.min(m.maxCars,d.style==='skinflint'?5:4);
+    const cost=tc+stationCost(at)+trainCost(m,cars);if(cost>budget)continue;
+    while(r.cash<cost+10000&&r.debt<300000){r.debt+=25000;r.cash+=25000}
+    if(r.cash<cost)return;
+    const sid=buildStation(at,r.id);if(sid<0)continue;
+    r.cash-=tc;r.capY+=tc;layTrack([p],d.grade,r.id);
+    const owners=new Set(p.filter(i=>hasTrack(i)&&ownOf(i)!==r.id).map(ownOf));
+    for(const w of owners){if(rightsToll(w,r.id)!==null)continue;
+      if(w===0){if(!S.proposals.some(q=>q.from===r.id&&q.kind==='rights'))propose({from:r.id,kind:'rights',toll:Math.round(d.toll*.8)})}
+      else S.rights[w+'>'+r.id]=RD(w).toll}
+    buyTrain(m,cars,c.kind==='ind'?[sid,c.src.id]:[c.src.id,sid],r.id);
+    const raid=d.style==='raider'&&mine.some(s=>cheb(s.tile,c.tile)<=4);
+    news(`The ${d.co} opens a line to ${c.name}.${raid?' Kroll is after your traffic there.':''}`,raid?'warn':'');
+    graphChanged();return;
+  }
+}
+function aiMonth(r){
+  if(r.dead)return;const d=RD(r.id);
+  if(!r.started){if(S.day>=r.nextBuild)aiStart(r);return}
+  {const net=r.revY-r.costY,m=net-(r.snap||0);r.snap=net;r.ema=(r.ema||0)*.75+m*.25}
+  for(let i=0;i<N;i++){const t=S.tiles[i];if(t.dmg===-1&&(t.own|0)===r.id&&(d.style!=='skinflint'||rand()<.35)){const c=repairCost(i);if(r.cash>c){r.cash-=c;r.costY+=c;t.dmg=ri(8,16)}}}
+  for(const tr of S.trains.filter(t=>t.owner===r.id&&t.state==='lost'&&t.lostSince>=0&&S.day-t.lostSince>120)){r.cash+=trainValue(tr);S.trains=S.trains.filter(x=>x!==tr);recomputeWants()}
+  if(r.ema<-1500&&rand()<.4){const ts=S.trains.filter(t=>t.owner===r.id&&S.day-t.bought>300).sort((a,b)=>a.profitY-b.profitY);if(ts.length>1&&ts[0].profitY<0){r.cash+=trainValue(ts[0]);S.trains=S.trains.filter(x=>x!==ts[0]);recomputeWants()}}
+  if(r.ema>0&&rand()<.5){for(const s of ownStations(r.id)){const pile=Object.values(s.stock).reduce((a,b)=>a+b,0);const trs=S.trains.filter(t=>t.owner===r.id&&t.stops.includes(s.id));
+    if(pile>90&&trs.length&&trs.length<(d.style==='skinflint'?5:3)){const m=aiModel(r),cars=Math.min(m.maxCars,5);if(r.cash>trainCost(m,cars)+30000){buyTrain(m,cars,trs[0].stops,r.id);break}}}}
+  if(S.day>=r.nextBuild){r.nextBuild=S.day+d.cadence*30+ri(0,30);if(r.cash>40000||r.debt<200000)aiExpand(r)}
+  if(d.style==='engineer'&&r.cash>180000&&rand()<.3){let c=0,n=0;for(let i=0;i<N;i++){const t=S.tiles[i];if((t.own|0)!==r.id||t.grade!==2)continue;
+      if(floodVuln(t,2)>0||snowThresh(t,2)<=1){const u=Math.max(0,tileCost(i,3)-tileCost(i,2)*.6);if(c+u>r.cash-100000)break;c+=u;t.grade=3;n++}}
+    if(n){r.cash-=c;r.capY+=c;news(`The ${d.co} rebuilds ${n} tiles of exposed track to engineered grade.`)}}
+  if(r.cash<15000&&r.debt<300000){r.debt+=25000;r.cash+=25000}else if(r.cash>260000&&r.debt>0){r.debt-=25000;r.cash-=25000}
+  if(d.style!=='skinflint'&&r.pct>=40&&S.day-r.defended>540){r.defended=S.day;const before=Math.round(r.pct);r.cash+=sharePrice(r)*2;r.pct=r.pct/1.25;
+    news(`The ${d.co} issues new stock to fend off your raid. Your stake falls from ${before}% to ${Math.round(r.pct)}%.`,'bad')}
+  r.premium*=.85;
+  if(r.cash<0&&r.debt>=300000){r.neg++;if(r.neg>=4)rivalBankrupt(r)}else r.neg=0;
+}
+function rivalBankrupt(r){const d=RD(r.id);r.dead=true;r.pct=0;
+  S.trains=S.trains.filter(t=>t.owner!==r.id);recomputeWants();
+  news(`The ${d.co} is bankrupt. Its trains go to the scrapyard and the receivers will auction its track. Your shares are worthless.`,'warn');
+  propose({from:r.id,kind:'auction',price:Math.max(5000,Math.round(trackValue(r.id)*.35/1000)*1000),expires:S.day+90})}
+function removeNetwork(r){for(let i=0;i<N;i++){const t=S.tiles[i];if((t.own|0)!==r.id)continue;
+    if(t.st>=0){S.stations[t.st].dead=true;t.st=-1}
+    for(const j of S.adj[i])S.adj[j]=S.adj[j].filter(k=>k!==i);S.adj[i]=[];t.grade=0;t.dmg=0;t.closed=false;t.own=0}
+  dropRights(r);graphChanged()}
+function dropRights(r){for(const k of Object.keys(S.rights))if(k.startsWith(r.id+'>')||k.endsWith('>'+r.id))delete S.rights[k]}
+function absorb(r,withMoney){
+  for(const t of S.tiles)if((t.own|0)===r.id)t.own=0;
+  for(const s of S.stations)if(s.owner===r.id)s.owner=0;
+  for(const tr of S.trains)if(tr.owner===r.id){tr.owner=0;tr.no=S.noCtr[0]=(S.noCtr[0]||0)+1}
+  if(withMoney){S.cash+=r.cash;S.debt+=r.debt}
+  dropRights(r);S.proposals=S.proposals.filter(p=>p.from!==r.id);r.dead=true;r.merged=true;r.pct=0;graphChanged()}
+function propose(p){p.id=S.nextProp++;p.expires=p.expires||S.day+60;S.proposals.push(p);const d=RD(p.from);
+  if(p.kind==='rights')news(`${d.baron} asks to run ${d.co} trains over your track for ${moneyFull(p.toll)} per tile. Answer in the Rivals tab.`,'warn');
+  else news(`The ${d.co} receivers offer you its whole network for ${moneyFull(p.price)}. The offer stands for 90 days (Rivals tab).`,'warn');
+  UI.dirtyUI=true}
+function resolveProposal(id,yes){const p=S.proposals.find(x=>x.id===id);if(!p)return;S.proposals=S.proposals.filter(x=>x!==p);const r=rv(p.from),d=RD(p.from);
+  if(p.kind==='rights'){if(yes){S.rights['0>'+r.id]=p.toll;r.rel+=15;news(`You grant the ${d.co} running rights at ${moneyFull(p.toll)} per tile.`,'good');graphChanged()}else{r.rel-=10;news(`You turn ${d.baron} down.`)}}
+  else{if(yes&&S.cash>=p.price){spend('construction',p.price);absorb(r,false);news(`You buy the ${d.co} network at auction.`,'good')}else{removeNetwork(r);news(`The ${d.co} track is torn up for scrap.`)}}}
+function rivalAction(a,b){
+  if(a==='prop')return resolveProposal(+b.dataset.id,b.dataset.yes==='1');
+  const r=b.dataset.r?rv(+b.dataset.r):null;if(!r||r.dead)return;const d=RD(r.id);
+  if(a==='buy'){const p=sharePrice(r);if(r.pct<=90&&S.cash>=p){spend('sharesBought',p);r.pct=Math.min(100,r.pct+10);r.premium+=.04;r.rel+={skinflint:2,engineer:-6,raider:-12}[d.style];news(`You buy 10% of the ${d.co} for ${moneyFull(p)}. Your stake: ${Math.round(r.pct)}%.`)}}
+  else if(a==='sellsh'){if(r.pct>=10){const v=Math.round(sharePrice(r)*.95);earn('sharesSold',v);r.pct-=10;r.premium=Math.max(0,r.premium-.03);news(`You sell 10% of the ${d.co} for ${moneyFull(v)}.`)}}
+  else if(a==='merge'){const c=buyoutCost(r);if(r.pct>50&&S.cash>=c){spend('sharesBought',c);absorb(r,true);news(`You take control of the ${d.co}. Its track, depots, trains, cash and debts are now yours.`,'good')}}
+  else if(a==='askr'){const toll=Math.round(d.toll*(r.rel<0?1.5:1));if(r.rel>d.accept){S.rights[r.id+'>0']=toll;r.rel+=3;news(`${d.baron} grants you running rights on the ${d.co} at ${moneyFull(toll)} per tile.`,'good');graphChanged()}else{r.rel-=2;news(`${d.baron} refuses to let your trains on ${d.co} track.`,'bad')}}
+  else if(a==='dropr'){delete S.rights[r.id+'>0'];graphChanged()}
+  else if(a==='revoke'){delete S.rights['0>'+r.id];r.rel-=25;news(`You revoke the ${d.co}'s running rights. ${d.baron} will not forget it.`,'warn');graphChanged()}
+}
+
 // ================= finance =================
-function newYearBook(){return{rev:{},construction:0,equipment:0,running:0,maint:0,interest:0,repairs:0,crews:0,sales:0,other:0}}
+function newYearBook(){return{rev:{},construction:0,equipment:0,running:0,maint:0,interest:0,repairs:0,crews:0,sales:0,other:0,tolls:0,tollsPaid:0,dividends:0,sharesBought:0,sharesSold:0}}
 function spend(cat,v){S.cash-=v;S.yr[cat]=(S.yr[cat]||0)+v;UI.dirtyUI=true}
 function earn(cat,v){S.cash+=v;S.yr[cat]=(S.yr[cat]||0)+v;UI.dirtyUI=true}
-function trackValue(){let v=0;for(let i=0;i<N;i++){const t=S.tiles[i];if(t.grade>0)v+=[0,1100,2900,6500][t.grade]*(t.t>=3?1.6:1)}return v}
-function netWorth(){return S.cash-S.debt+trackValue()*.5+S.trains.reduce((s,t)=>s+trainValue(t),0)+S.stations.filter(s=>!s.dead).length*3000}
+function trackValue(o=0){let v=0;for(let i=0;i<N;i++){const t=S.tiles[i];if(t.grade>0&&(t.own|0)===o)v+=[0,1100,2900,6500][t.grade]*(t.t>=3?1.6:1)}return v}
+function netWorth(){return S.cash-S.debt+trackValue(0)*.5+S.trains.filter(t=>(t.owner|0)===0).reduce((s,t)=>s+trainValue(t),0)+S.stations.filter(s=>!s.dead&&(s.owner|0)===0).length*3000+sharesValue()}
+function rivalNW(r){return r.cash-r.debt+trackValue(r.id)*.5+S.trains.filter(t=>t.owner===r.id).reduce((s,t)=>s+trainValue(t),0)+S.stations.filter(s=>!s.dead&&s.owner===r.id).length*3000}
+function sharePrice(r){const nw=Math.max(30000,rivalNW(r));const perf=clamp(1+(r.lastProfit||0)/nw*1.5,.6,1.8);return Math.round(nw*.1*perf*(1+r.premium)/100)*100}
+function buyoutCost(r){return Math.round((100-r.pct)/10*sharePrice(r)*1.1/100)*100}
+function sharesValue(){return S.rivals.reduce((s,r)=>s+(r.dead?0:r.pct/10*sharePrice(r)*.95),0)}
 function interestRate(){return .065+S.econ.rateAdd}
 function monthlyFinance(){
-  let maint=0;for(let i=0;i<N;i++){const t=S.tiles[i];if(t.grade>0)maint+=[0,80,170,280][t.grade]*(t.river?2:1)}
-  maint+=S.stations.filter(s=>!s.dead).length*1500;
-  spend('maint',maint/12);
-  let run=0;for(const tr of S.trains){const m=modelOf(tr);run+=m.run+tr.cars*CAR_RUN;tr.profitY-=(m.run+tr.cars*CAR_RUN)/12}
-  spend('running',run/12);
+  const maint={},run={};
+  for(let i=0;i<N;i++){const t=S.tiles[i];if(t.grade>0){const o=t.own|0;maint[o]=(maint[o]||0)+[0,80,170,280][t.grade]*(t.river?2:1)}}
+  for(const s of S.stations)if(!s.dead){const o=s.owner|0;maint[o]=(maint[o]||0)+1500}
+  for(const tr of S.trains){const m=modelOf(tr),c=m.run+tr.cars*CAR_RUN,o=tr.owner|0;run[o]=(run[o]||0)+c;tr.profitY-=c/12}
+  spend('maint',(maint[0]||0)/12);spend('running',(run[0]||0)/12);
   if(S.debt>0)spend('interest',S.debt*interestRate()/12);
+  for(const r of S.rivals){if(r.dead)continue;const c=((maint[r.id]||0)+(run[r.id]||0))/12+r.debt*interestRate()/12;r.cash-=c;r.costY+=c}
 }
 
 // ================= main tick =================
@@ -741,6 +910,8 @@ function tick(){
 }
 function onMonth(d){
   monthlyFinance();
+  for(const r of S.rivals)aiMonth(r);
+  for(const p of [...S.proposals])if(S.day>=p.expires)resolveProposal(p.id,false);
   monthlyTowns();
   econEvents();
   if(d.m%3===2)startSeason();
@@ -760,6 +931,8 @@ function yearEnd(d){
   const y=S.yr;const rev=Object.values(y.rev).reduce((s,v)=>s+v,0);
   const ops=y.running+y.maint+y.interest+y.repairs+y.crews;
   news(`Books closed for ${d.y-1}: revenue ${moneyFull(rev)}, operating costs ${moneyFull(ops)}, profit ${moneyFull(rev-ops)}.`,rev-ops>=0?'good':'bad');
+  let divs=0;for(const r of S.rivals){if(r.dead||!r.started)continue;const pr=r.revY-r.costY;r.lastProfit=pr;if(pr>0){const dv=pr*.3;r.cash-=dv;divs+=dv*r.pct/100}r.revY=0;r.costY=0;r.capY=0;r.snap=0}
+  if(divs>=1){earn('dividends',divs);news(`Rival dividends pay you ${moneyFull(divs)}.`,'good')}
   S.last=y;S.yr=newYearBook();for(const tr of S.trains){tr.profitL=tr.profitY;tr.profitY=0}
   const nm=MODELS.find(m=>m.year===d.y);if(nm)news(`New locomotive available: ${nm.name}. ${nm.note}`,'good');
 }
@@ -775,6 +948,7 @@ function endGame(bankrupt){
   <tr><td>Net worth</td><td class="r">${moneyFull(netWorth())}</td></tr>
   <tr><td>Territory population</td><td class="r">${fmt(totalPop())}</td></tr>
   <tr><td>Towns alive / abandoned</td><td class="r">${alive} / ${ghosts}</td></tr>
+  <tr><td>Rivals taken over</td><td class="r">${S.rivals.filter(r=>r.merged).length} of ${S.rivals.length}</td></tr>
   <tr><td>Charter goals met</td><td class="r">${Object.keys(S.goalsMet).length} of ${GOALS.length}</td></tr>
   <tr><td><b>Score</b></td><td class="r"><b>${fmt(sc)}</b></td></tr></tbody></table>
   <p class="hint">Score = net worth ÷ 1,000 + population ÷ 40 + 150 per goal. Ranks: 900 short line, 1,700 regional, 2,800 trunk line, 4,200 legend.</p>
@@ -830,7 +1004,7 @@ function drawTrack(){
   const edges=[];for(let a=0;a<N;a++)for(const b of S.adj[a])if(a<b)edges.push([a,b]);
   for(const pass of [0,1,2]){
     for(const[a,b]of edges){
-      const ga=S.tiles[a].st>=0?S.tiles[b].grade:S.tiles[b].st>=0?S.tiles[a].grade:Math.min(S.tiles[a].grade,S.tiles[b].grade);const g=ga||2;
+      const ga=S.tiles[a].st>=0?S.tiles[b].grade:S.tiles[b].st>=0?S.tiles[a].grade:Math.min(S.tiles[a].grade,S.tiles[b].grade);const g=ga||2;const eo=(S.tiles[a].st>=0?S.tiles[b].own:S.tiles[a].own)|0;
       const x1=cx(a),y1=cy(a),x2=cx(b),y2=cy(b);
       if(pass===0){ctx.strokeStyle=g===3?'rgba(230,235,238,.9)':'rgba(30,24,18,.35)';ctx.lineWidth=TS*(g===3?.42:g===2?.34:.26);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke()}
       else if(pass===1){ // ties
@@ -839,7 +1013,7 @@ function drawTrack(){
         for(let k=0;k<=n;k++){const px=x1+dx*k/n,py=y1+dy*k/n,w=TS*(g===3?.17:.14);ctx.moveTo(px-nx*w,py-ny*w);ctx.lineTo(px+nx*w,py+ny*w)}ctx.stroke();
       }else{
         const tun=(S.tiles[a].t===T.MOUNT&&S.tiles[a].grade===3)||(S.tiles[b].t===T.MOUNT&&S.tiles[b].grade===3);
-        ctx.strokeStyle=g===1?'#6b4f33':g===2?'#2c2f33':'#111315';ctx.lineWidth=Math.max(1.2,TS*(g===3?.11:.08));
+        ctx.strokeStyle=eo?coCol(eo):g===1?'#6b4f33':g===2?'#2c2f33':'#111315';ctx.lineWidth=Math.max(1.2,TS*(g===3?.11:.08));
         if(tun)ctx.setLineDash([TS*.18,TS*.12]);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.setLineDash([]);
       }
     }
@@ -874,7 +1048,7 @@ function drawInds(){
   }
 }
 function drawStations(){
-  for(const s of S.stations){if(s.dead)continue;const x=X(s.tile)*TS,y=Y(s.tile)*TS;ctx.fillStyle='#14202a';ctx.fillRect(x+TS*.12,y+TS*.24,TS*.76,TS*.52);ctx.strokeStyle='#f0a63a';ctx.lineWidth=Math.max(1.5,TS*.09);ctx.strokeRect(x+TS*.12,y+TS*.24,TS*.76,TS*.52);
+  for(const s of S.stations){if(s.dead)continue;const x=X(s.tile)*TS,y=Y(s.tile)*TS;ctx.fillStyle='#14202a';ctx.fillRect(x+TS*.12,y+TS*.24,TS*.76,TS*.52);ctx.strokeStyle=coCol(s.owner|0);ctx.lineWidth=Math.max(1.5,TS*.09);ctx.strokeRect(x+TS*.12,y+TS*.24,TS*.76,TS*.52);
     if(s.rating>0){ctx.fillStyle=s.rating>.6?'#71c48f':s.rating>.4?'#f0a63a':'#e3604f';ctx.fillRect(x+TS*.3,y+TS*.42,TS*.4,TS*.16)}}
 }
 function trainXY(path,s){const k=clamp(Math.floor(s),0,path.length-1),f=s-k;const a=path[k],b=path[Math.min(k+1,path.length-1)];return[cx(a)+(cx(b)-cx(a))*f,cy(a)+(cy(b)-cy(a))*f]}
@@ -884,7 +1058,7 @@ function drawTrains(){
     const pts=[];for(let j=0;j<=tr.cars;j++)pts.push(trainXY(tr.path,Math.max(0,s-j*.3)));
     for(let j=tr.cars;j>=0;j--){const[x,y]=pts[j];const[px,py]=pts[Math.max(0,j-1)];let ang=Math.atan2(py-y,px-x);if(j===0){const[nx,ny]=trainXY(tr.path,s+.2);ang=Math.atan2(ny-y,nx-x)}
       ctx.save();ctx.translate(x,y);ctx.rotate(isNaN(ang)?0:ang);const L=j?TS*.24:TS*.34,Wd=TS*.22;
-      ctx.fillStyle=j?'#2a2a2a':m.col;ctx.strokeStyle='#0b0f12';ctx.lineWidth=1;ctx.fillRect(-L/2,-Wd/2,L,Wd);ctx.strokeRect(-L/2,-Wd/2,L,Wd);
+      ctx.fillStyle=j?'#2a2a2a':(tr.owner?coCol(tr.owner):m.col);ctx.strokeStyle='#0b0f12';ctx.lineWidth=1;ctx.fillRect(-L/2,-Wd/2,L,Wd);ctx.strokeRect(-L/2,-Wd/2,L,Wd);
       if(j&&tr.cargo.length){ctx.fillStyle=CARGO[tr.cargo[(j-1)%tr.cargo.length].type].col;ctx.fillRect(-L/2+1.5,-Wd/2+1.5,L-3,Wd-3)}
       ctx.restore()}
     if(tr.state==='wait'||tr.state==='lost'){const[x,y]=pts[0];ctx.fillStyle='#e3604f';ctx.beginPath();ctx.arc(x,y-TS*.35,TS*.12,0,Math.PI*2);ctx.fill()}
@@ -917,7 +1091,7 @@ function render(){if(!S)return;drawBase();ctx.clearRect(0,0,W*TS,H*TS);ctx.drawI
 // ================= tools =================
 function upgradeRun(i){ // contiguous run of plain track between junctions/stations
   const run=[i];const seen=new Set([i]);const stack=[i];
-  while(stack.length){const c=stack.pop();for(const j of S.adj[c]){if(seen.has(j))continue;const t=S.tiles[j];if(t.st>=0||t.grade===0)continue;seen.add(j);if(S.adj[j].length<=2){run.push(j);stack.push(j)}else run.push(j)}
+  while(stack.length){const c=stack.pop();for(const j of S.adj[c]){if(seen.has(j))continue;const t=S.tiles[j];if(t.st>=0||t.grade===0||(t.own|0)!==0)continue;seen.add(j);if(S.adj[j].length<=2){run.push(j);stack.push(j)}else run.push(j)}
     if(run.length>60)break}
   return run;
 }
@@ -925,7 +1099,7 @@ function upgradeCost(run,g){let c=0;for(const i of run){const t=S.tiles[i];if(t.
 function doUpgrade(i){const run=upgradeRun(i),g=UI.grade;const c=upgradeCost(run,g);if(c<=0)return news(`That run is already ${GRADE[g].toLowerCase()} or better.`);if(S.cash<c)return news(`Upgrading costs ${moneyFull(c)}.`,'bad');
   spend('construction',c);let n=0;for(const j of run){const t=S.tiles[j];if(t.grade<g){t.grade=g;n++;if(t.closed&&S.sev<snowThresh(t,g)+(S.crewsNow.snow?1:0))t.closed=false;if(t.dmg===-1)t.dmg=0}}
   news(`Upgraded ${n} tiles to ${GRADE[g].toLowerCase()} for ${moneyFull(c)}.`);graphChanged()}
-function demolish(i){const t=S.tiles[i];
+function demolish(i){const t=S.tiles[i];if(ownOf(i)!==0&&(t.grade>0||t.st>=0))return news(`That belongs to the ${RD(ownOf(i)).co}.`,'bad');
   if(S.trains.some(tr=>trainTile(tr)===i||(tr.path[tr.k+1]===i&&tr.frac>0)))return news('A train is on that tile. Wait for it to pass.','bad');
   if(t.st>=0){const st=S.stations[t.st];if(S.trains.some(tr=>tr.stops.includes(st.id)))return news(`Trains still stop at ${st.name}. Sell or reroute them first.`,'bad');
     st.dead=true;t.st=-1;if(t.grade===0)for(const j of [...S.adj[i]]){S.adj[j]=S.adj[j].filter(k=>k!==i)}if(t.grade===0)S.adj[i]=[];earn('sales',1500);news(`${st.name} station closed.`);graphChanged();return}
@@ -933,18 +1107,19 @@ function demolish(i){const t=S.tiles[i];
 
 function inspectHTML(i){
   const t=S.tiles[i];let h=`<h4>${TER_NAME[t.t]}${t.river?' · River':''}${t.flood&&!t.river?' · Floodplain':''}</h4><div class="hint num">Tile ${X(i)},${Y(i)} · elevation ${fmt(1800+t.e*9200)} ft</div>`;
-  if(t.town>=0){const tw=S.towns[t.town];h+=townHTML(tw)}
+  if(t.town>=0){const tw=S.towns[t.town];h+=townHTML(tw)+shareHTML(tw.tile,3,'pass')}
   if(t.ind>=0){const d=S.inds[t.ind],def=IND[d.type];const f=d.prod6>0?d.moved6/d.prod6:0;
     h+=`<div class="row"><b>${def.name}</b><span class="num">${d.closed?'closed':def.inp?'processor':'output ×'+d.mult.toFixed(2)}</span></div>`;
     if(def.inp)h+=`<div class="hint">Takes ${def.inp.map(c=>CARGO[c].name.toLowerCase()).join(' + ')}, makes ${CARGO[def.out].name.toLowerCase()}. Waiting: ${def.inp.map(c=>fmt(d.pending[c]||0)+' '+c).join(', ')}</div>`;
     else h+=`<div class="hint">Makes about ${fmt(def.base*d.mult)} ${CARGO[def.out].name.toLowerCase()} a month (seasonal). Shipped this half-year: ${Math.round(f*100)}%. Above 55% it tends to expand; ignored for two years it shrinks and may close.</div>`}
-  if(t.st>=0){const s=S.stations[t.st];h+=`<div class="row"><b>${esc(s.name)} station</b><span class="num">rating ${Math.round(s.rating*100)}%</span></div>`;
+  if(t.ind>=0&&!S.inds[t.ind].closed)h+=shareHTML(i,2,IND[S.inds[t.ind].type].out);
+  if(t.st>=0){const s=S.stations[t.st];if(s.owner)h+=`<div class="hint" style="color:${coCol(s.owner)}">Depot of the ${esc(RD(s.owner).co)}</div>`;h+=`<div class="row"><b>${esc(s.name)} station</b><span class="num">rating ${Math.round(s.rating*100)}%</span></div>`;
     const ac=[...accepts(s)].map(c=>CARGO[c].name).join(', ')||'nothing',pr=[...produces(s)].map(c=>CARGO[c].name).join(', ')||'nothing';
     h+=`<div class="hint">Supplies: ${pr}<br>Accepts: ${ac}</div>`;
     const stock=Object.entries(s.stock).filter(([,v])=>v>=1).map(([k,v])=>`${fmt(v)} ${CARGO[k].name.toLowerCase()}`).join(', ');h+=`<div class="hint">Waiting: ${stock||'nothing'}</div>`;
     if(!s.wants.length)h+=`<div class="hint" style="color:var(--lamp)">No train serves this station yet, so nothing gathers here.</div>`}
-  if(t.grade>0){h+=`<div class="row"><span class="k">Track</span><span>${GRADE[t.grade]}${t.t===T.MOUNT&&t.grade===3?' (tunnel)':t.river?' bridge':''}</span></div>`;
-    if(t.dmg===-1)h+=`<div class="row"><span style="color:var(--stop)">Washed out</span><button class="btn small" data-act="repair" data-i="${i}">Repair ${moneyFull(repairCost(i))}</button></div>`;
+  if(t.grade>0){h+=`<div class="row"><span class="k">Track</span><span>${GRADE[t.grade]}${t.t===T.MOUNT&&t.grade===3?' (tunnel)':t.river?' bridge':''}${ownOf(i)?' · '+esc(RD(ownOf(i)).co):''}</span></div>`;
+    if(t.dmg===-1&&ownOf(i)===0)h+=`<div class="row"><span style="color:var(--stop)">Washed out</span><button class="btn small" data-act="repair" data-i="${i}">Repair ${moneyFull(repairCost(i))}</button></div>`;
     else if(t.dmg>0)h+=`<div class="hint">Repair crews at work: ${t.dmg} days left.</div>`;
     if(t.closed)h+=`<div class="hint" style="color:var(--snow)">Snowbound until the spring thaw.</div>`}
   h+=riskHTML(i);return h;
@@ -954,6 +1129,9 @@ function riskHTML(i){const t=S.tiles[i];if(t.t===T.WATER)return'<div class="hint
   for(const g of[1,2,3]){const fv=floodVuln(t,g),sn=snowThresh(t,g);const risks=[];if(fv>0)risks.push(`washout ${Math.round(fv*100)}% exposure`);if(sn<=2)risks.push(sn===0?'closes every winter':sn===1?'closes in snowy winters':'closes in blizzards');
     r+=`<tr><td>${GRADE[g]}</td><td class="r num">${moneyFull(tileCost(i,g))}</td><td>${risks.join('; ')||'all-weather'}</td></tr>`}
   return r+'</tbody></table>'}
+function shareHTML(tile,r,type){const sts=S.stations.filter(s=>!s.dead&&s.rating>0&&cheb(s.tile,tile)<=r&&s.wants.includes(type));if(!sts.length)return'';
+  const by={};let sw=0;for(const s of sts){const w=s.rating*s.rating;by[s.owner|0]=(by[s.owner|0]||0)+w;sw+=w}
+  return`<div class="hint">Market share: ${Object.entries(by).sort((a,b)=>b[1]-a[1]).map(([o,v])=>`<span style="color:${coCol(+o)}">${+o===0?'You':esc(RD(+o).co)} ${Math.round(v/sw*100)}%</span>`).join(' · ')}</div>`}
 function townHTML(tw){
   if(tw.ghost)return`<div><b>${esc(tw.name)}</b>: abandoned.</div>`;
   const bar=(v)=>`<div class="bar ${v<.35?'lo':v<.7?'mid':''}"><i style="width:${Math.round(v*100)}%"></i></div>`;
@@ -972,7 +1150,7 @@ function updateHeader(){
   $('hDate').textContent=dateStr();
   $('hSeason').innerHTML=`${SEASONS[S.season]} <span class="sev sev${S.sev}">${SEVN[S.season][S.sev]}</span>`;
   $('hCash').textContent=moneyFull(S.cash);$('hCash').classList.toggle('neg',S.cash<0);
-  $('hDebt').textContent=moneyFull(S.debt);$('hNet').textContent=money(netWorth());$('hPop').textContent=fmt(totalPop());
+  $('hDebt').textContent=moneyFull(S.debt);document.querySelector('[data-tab="rivals"]').textContent='Rivals'+(S.proposals.length?` (${S.proposals.length})`:'');$('hNet').textContent=money(netWorth());$('hPop').textContent=fmt(totalPop());
 }
 function updateNews(){$('news').innerHTML=S.news.slice(0,7).map(n=>`<li class="${n.kind}"><span class="d">${monthStr(n.d)}</span><span>${esc(n.text)}</span></li>`).join('')}
 function updateBuild(){
@@ -987,6 +1165,7 @@ function updateBuild(){
       <div class="row"><span class="k">Cost</span><span class="num" style="color:${sm.cost>S.cash?'var(--stop)':'inherit'}">${moneyFull(sm.cost)}</span></div>
       <div class="row"><span class="k">Flood-exposed</span><span class="num">${sm.flood} tiles</span></div>
       <div class="row"><span class="k">Snow closures</span><span class="num">${sm.snow[0]} every winter · ${sm.snow[1]} snowy · ${sm.snow[2]} blizzard</span></div>
+      ${Object.entries(sm.foreign).map(([o,n])=>{const toll=rightsToll(+o,0);return`<div class="hint" style="color:var(--lamp)">Uses ${n} tile${n>1?'s':''} of ${esc(RD(+o).co)} track. ${toll!==null?`You hold running rights at ${moneyFull(toll)} per tile.`:'Your trains need running rights from them (Rivals tab).'}</div>`}).join('')}
       <div class="hint">Preview colors: green all-weather, blue floods, white closes in ordinary snow, amber closes only in blizzards, red both.</div>
       <div class="btns"><button class="btn" data-act="commit" ${sm.cost>S.cash?'disabled':''}>Build ${moneyFull(sm.cost)}</button><button class="btn ghost" data-act="undo">Undo leg</button><button class="btn ghost" data-act="cancel">Cancel</button></div>`}
   else if(UI.tool==='upgrade'){h=`<h4>Upgrade track</h4><div class="hint">Hover a stretch of track. Click to upgrade the whole run between junctions to the chosen grade.</div>`;
@@ -1001,15 +1180,15 @@ function updateTrainsTab(){
   $('mdlInfo').innerHTML=`${m.note} Speed ${m.speed} tiles/day · up to ${m.maxCars} cars · grade power ${Math.round(m.power*100)}% · upkeep ${moneyFull(m.run+(+cars.value)*CAR_RUN)}/yr<br><b>Price ${moneyFull(trainCost(m,+cars.value))}</b>`;
   const sl=UI.stops.map((id,k)=>`<span>${k+1}. ${esc(S.stations[id].name)}</span>`).join('')||'<span>none yet</span>';if($('stopList').innerHTML!==sl)$('stopList').innerHTML=sl;
   $('buyBtn').disabled=new Set(UI.stops).size<2||S.cash<trainCost(m,+cars.value);
-  const r=S.trains.map(tr=>{const mm=modelOf(tr);let st;const dest=S.stations[tr.stops[tr.si]].name;
+  const r=S.trains.filter(t=>(t.owner|0)===0).map(tr=>{const mm=modelOf(tr);let st;const dest=S.stations[tr.stops[tr.si]].name;
     if(tr.state==='load')st=`Loading at ${esc(S.stations[tr.stops[(tr.si)%tr.stops.length]].name)}`;else if(tr.state==='wait')st=`<span style="color:var(--stop)">${tr.note||'Held'}</span> on the way to ${esc(dest)}`;else if(tr.state==='lost')st=`<span style="color:var(--stop)">${esc(tr.note)}</span>`;else st=`En route to ${esc(dest)}${tr.note==='held'?' (route blocked ahead)':''}`;
     const load=tr.cargo.reduce((s,c)=>s+c.amt,0);
-    return`<div class="trainrow"><span class="sw" style="background:${mm.col}"></span><div><div class="nm">No. ${tr.id} · ${mm.name}</div><div class="hint">${st}<br>${tr.stops.map(i=>esc(S.stations[i].name)).join(' → ')}<br>Load ${fmt(load)}/${tr.cars*CAR_CAP} · this year <span class="num">${moneyFull(tr.profitY)}</span>${tr.profitL!==null?` · last <span class="num">${moneyFull(tr.profitL)}</span>`:''}</div></div><button class="btn ghost small" data-act="sell" data-id="${tr.id}">Sell ${money(trainValue(tr))}</button></div>`}).join('')||'<div class="hint">No trains yet. Build two stations joined by track, then order one above.</div>';
+    return`<div class="trainrow"><span class="sw" style="background:${mm.col}"></span><div><div class="nm">No. ${tr.no} · ${mm.name}</div><div class="hint">${st}<br>${tr.stops.map(i=>esc(S.stations[i].name)).join(' → ')}<br>Load ${fmt(load)}/${tr.cars*CAR_CAP} · this year <span class="num">${moneyFull(tr.profitY)}</span>${tr.profitL!==null?` · last <span class="num">${moneyFull(tr.profitL)}</span>`:''}</div></div><button class="btn ghost small" data-act="sell" data-id="${tr.id}">Sell ${money(trainValue(tr))}</button></div>`}).join('')||'<div class="hint">No trains yet. Build two stations joined by track, then order one above.</div>';
   if($('roster').dataset.h!==r){$('roster').innerHTML=r;$('roster').dataset.h=r}
 }
-function exposure(){let fl=0,sn=[0,0,0];for(const t of S.tiles){if(t.grade>0){if(floodVuln(t,t.grade)>0)fl++;const s=snowThresh(t,t.grade);if(s<=2)sn[s]++}}return{fl,sn}}
-function snowCrewCost(){let n=0;for(const t of S.tiles)if(t.grade>0&&(t.t===T.HILLS||t.t===T.MOUNT))n++;return 4000+n*260}
-function leveeCost(){let n=0;for(const t of S.tiles)if(t.grade>0&&t.flood)n++;return 3000+n*220}
+function exposure(){let fl=0,sn=[0,0,0];for(const t of S.tiles){if(t.grade>0&&!(t.own|0)){if(floodVuln(t,t.grade)>0)fl++;const s=snowThresh(t,t.grade);if(s<=2)sn[s]++}}return{fl,sn}}
+function snowCrewCost(o=0){let n=0;for(const t of S.tiles)if(t.grade>0&&(t.own|0)===o&&(t.t===T.HILLS||t.t===T.MOUNT))n++;return 4000+n*260}
+function leveeCost(o=0){let n=0;for(const t of S.tiles)if(t.grade>0&&(t.own|0)===o&&t.flood)n++;return 3000+n*220}
 function updateAlmanac(){
   const n=S.next,ex=exposure();const fcName=SEVN[n.season][n.fc];
   const dist=[0,1,2].map(v=>v===n.fc?n.acc:(1-n.acc)/2);
@@ -1029,18 +1208,47 @@ function updateAlmanac(){
 }
 function updateLedger(){
   const y=S.yr,rev=Object.values(y.rev).reduce((s,v)=>s+v,0);
-  const rows=[['Revenue',rev],['Running costs',-y.running],['Track & station upkeep',-y.maint],['Interest',-y.interest],['Repairs',-y.repairs],['Weather crews',-y.crews]];
+  const rows=[['Revenue',rev],['Tolls received',y.tolls||0],['Dividends',y.dividends||0],['Tolls paid',-(y.tollsPaid||0)],['Running costs',-y.running],['Track & station upkeep',-y.maint],['Interest',-y.interest],['Repairs',-y.repairs],['Weather crews',-y.crews]];
   const op=rows.reduce((s,r)=>s+r[1],0);
   let h=`<div class="card"><h4>Treasury</h4><div class="row"><span class="k">Loan</span><span class="num">${moneyFull(S.debt)} of ${money(LOAN_MAX)} at ${(interestRate()*100).toFixed(1)}%</span></div>
    <div class="btns"><button class="btn small" data-act="borrow" ${S.debt>=LOAN_MAX?'disabled':''}>Borrow $25k</button><button class="btn ghost small" data-act="repay" ${S.debt<=0||S.cash<LOAN_STEP?'disabled':''}>Repay $25k</button></div>
    <canvas class="spark" id="spark" width="320" height="60" aria-label="Net worth history"></canvas><div class="hint">Net worth by month. Now ${moneyFull(netWorth())}.</div></div>`;
-  h+=`<div class="card"><h4>${date().y} so far</h4><table class="t num"><tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td class="r">${moneyFull(r[1])}</td></tr>`).join('')}<tr><td><b>Operating profit</b></td><td class="r"><b>${moneyFull(op)}</b></td></tr><tr><td>Construction &amp; equipment</td><td class="r">${moneyFull(-(y.construction+y.equipment))}</td></tr></tbody></table>
+  h+=`<div class="card"><h4>${date().y} so far</h4><table class="t num"><tbody>${rows.map(r=>`<tr><td>${r[0]}</td><td class="r">${moneyFull(r[1])}</td></tr>`).join('')}<tr><td><b>Operating profit</b></td><td class="r"><b>${moneyFull(op)}</b></td></tr><tr><td>Construction &amp; equipment</td><td class="r">${moneyFull(-(y.construction+y.equipment))}</td></tr><tr><td>Stock bought / sold</td><td class="r">${moneyFull((y.sharesSold||0)-(y.sharesBought||0))}</td></tr></tbody></table>
    <div class="hint">${Object.entries(y.rev).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`${CARGO[k].name} ${money(v)}`).join(' · ')||'No revenue yet.'}</div></div>`;
   h+=`<div class="card"><h4>Charter goals by 1900</h4>${GOALS.map(g=>`<div class="goal ${S.goalsMet[g.id]?'met':''}"><span class="ck"></span><span>${g.text}${S.goalsMet[g.id]?` <span class="hint">(${S.goalsMet[g.id]})</span>`:''}</span></div>`).join('')}<div class="hint">Score if the charter ended today: <b class="num">${fmt(score())}</b> (${rank(score())})</div></div>`;
   const tw=S.towns.filter(t=>!t.ghost).sort((a,b)=>b.pop-a.pop);
-  h+=`<div class="card"><h4>Towns</h4><table class="t"><thead><tr><th>Town</th><th class="r">Pop.</th><th class="r">Trend</th><th>Service</th></tr></thead><tbody>${tw.map(t=>`<tr><td>${esc(t.name)}${t.boom&&!t.boomSaved?' ⚑':''}</td><td class="r num">${fmt(t.pop)}</td><td class="r num" style="color:${t.trend>0?'var(--go)':'var(--stop)'}">${(t.trend*1200).toFixed(1)}%</td><td>${isConnected(t)?'yes':'—'}</td></tr>`).join('')}</tbody></table>
+  h+=`<div class="card"><h4>Towns</h4><table class="t"><thead><tr><th>Town</th><th class="r">Pop.</th><th class="r">Trend</th><th>Service</th></tr></thead><tbody>${tw.map(t=>`<tr><td>${esc(t.name)}${t.boom&&!t.boomSaved?' ⚑':''}</td><td class="r num">${fmt(t.pop)}</td><td class="r num" style="color:${t.trend>0?'var(--go)':'var(--stop)'}">${(t.trend*1200).toFixed(1)}%</td><td>${servedBy(t).map(o=>`<span style="color:${coCol(o)}" title="${o?esc(RD(o).co):'You'}">●</span>`).join(' ')||'—'}</td></tr>`).join('')}</tbody></table>
    <div class="hint">${S.towns.filter(t=>t.ghost).length} abandoned. Trend is the annualized growth rate.</div></div>`;
   if($('ledger').dataset.h!==h){$('ledger').innerHTML=h;$('ledger').dataset.h=h;drawSpark()}
+}
+function relLabel(v){return v>=30?'Friendly':v>=0?'Cordial':v>=-30?'Wary':'Hostile'}
+function updateRivals(){
+  let h='';
+  for(const p of S.proposals){const d=RD(p.from);
+    if(p.kind==='rights')h+=`<div class="card" style="border-left:3px solid ${d.col}"><h4>${esc(d.baron)} asks for running rights</h4><div class="hint">The ${esc(d.co)} wants to run trains over your track and will pay ${moneyFull(p.toll)} each time one of its trains enters one of your tiles. Expires ${monthStr(p.expires)}.</div><div class="btns"><button class="btn small" data-act="prop" data-id="${p.id}" data-yes="1">Grant</button><button class="btn ghost small" data-act="prop" data-id="${p.id}" data-yes="0">Refuse</button></div></div>`;
+    else{const n=S.tiles.filter(t=>t.grade>0&&(t.own|0)===p.from).length,m=ownStations(p.from).length;
+      h+=`<div class="card" style="border-left:3px solid ${d.col}"><h4>Auction: the ${esc(d.co)} network</h4><div class="hint">${n} tiles of track and ${m} depots for ${moneyFull(p.price)}. Expires ${monthStr(p.expires)}. Unsold track is torn up.</div><div class="btns"><button class="btn small" data-act="prop" data-id="${p.id}" data-yes="1" ${S.cash<p.price?'disabled':''}>Buy it</button><button class="btn ghost small" data-act="prop" data-id="${p.id}" data-yes="0">Pass</button></div></div>`}}
+  for(const r of S.rivals){const d=RD(r.id);
+    if(r.dead){h+=`<div class="card"><h4 style="color:var(--muted)">${esc(d.co)}</h4><div class="hint">${r.merged?'Absorbed into your railroad.':'Bankrupt.'}</div></div>`;continue}
+    if(!r.started){h+=`<div class="card"><h4 style="color:${d.col}">${esc(d.co)}</h4><div class="hint">${esc(d.baron)} is raising capital back East. Expected in the territory around ${monthStr(r.nextBuild)}.</div></div>`;continue}
+    const tiles=S.tiles.filter(t=>t.grade>0&&(t.own|0)===r.id).length,sts=ownStations(r.id).length,trs=S.trains.filter(t=>t.owner===r.id).length,towns=S.towns.filter(t=>!t.ghost&&servedBy(t).includes(r.id)).length;
+    const price=sharePrice(r),ask=Math.round(d.toll*(r.rel<0?1.5:1)),mine=rightsToll(r.id,0),theirs=rightsToll(0,r.id);
+    h+=`<div class="card" style="border-left:3px solid ${d.col}"><h4>${esc(d.co)}</h4><div class="hint">${esc(d.baron)}. ${esc(d.blurb)}</div>
+     <div class="row"><span class="k">Relations</span><span>${relLabel(r.rel)} <span class="num hint">${Math.round(r.rel)}</span></span></div>
+     <div class="row"><span class="k">Network</span><span class="num">${tiles} tiles · ${sts} depots · ${trs} trains</span></div>
+     <div class="row"><span class="k">Towns served</span><span class="num">${towns}</span></div>
+     <div class="row"><span class="k">Net worth</span><span class="num">${moneyFull(rivalNW(r))}</span></div>
+     <div class="row"><span class="k">Last year's profit</span><span class="num">${moneyFull(r.lastProfit)}</span></div>
+     <div class="row"><span class="k">Price of 10%</span><span class="num">${moneyFull(price)}</span></div>
+     <div class="row"><span class="k">Your stake</span><span class="num">${Math.round(r.pct)}%</span></div>
+     <div class="btns"><button class="btn small" data-act="buy" data-r="${r.id}" ${r.pct>90||S.cash<price?'disabled':''}>Buy 10%</button><button class="btn ghost small" data-act="sellsh" data-r="${r.id}" ${r.pct<10?'disabled':''}>Sell 10%</button>${r.pct>50?`<button class="btn small" data-act="merge" data-r="${r.id}" ${S.cash<buyoutCost(r)?'disabled':''}>Merge (${moneyFull(buyoutCost(r))})</button>`:''}</div>
+     <div class="hint">${r.pct>50?'You hold a majority. Merging buys out the other shareholders at a 10% premium and takes over their track, depots, trains, cash and debt.':'Hold more than 50% to force a merger. They pay 30% of yearly profit as dividends.'+(d.style!=='skinflint'?' Above 40% they may issue new stock to dilute you.':'')}</div>
+     <div class="row"><span class="k">Your trains on their track</span><span>${mine!==null?moneyFull(mine)+' per tile':'no rights'}</span></div>
+     <div class="row"><span class="k">Their trains on your track</span><span>${theirs!==null?moneyFull(theirs)+' per tile':'no rights'}</span></div>
+     <div class="btns">${mine===null?`<button class="btn ghost small" data-act="askr" data-r="${r.id}">Ask for rights at ${moneyFull(ask)}/tile</button>`:`<button class="btn ghost small" data-act="dropr" data-r="${r.id}">Give up rights</button>`}${theirs!==null?`<button class="btn ghost small" data-act="revoke" data-r="${r.id}">Revoke their rights</button>`:''}</div>
+     ${mine===null?`<div class="hint">${r.rel>d.accept?'They would probably agree.':'Relations are too poor. They would refuse.'}</div>`:''}</div>`}
+  h+='<div class="hint">Where depots overlap, the railroad with better service (more frequent, faster trains) takes the larger share of the cargo. Buying their stock or crowding their depots sours relations. Granting them rights improves them.</div>';
+  if($('rivals').dataset.h!==h){$('rivals').innerHTML=h;$('rivals').dataset.h=h}
 }
 function drawSpark(){const c=$('spark');if(!c)return;const g=c.getContext('2d');const w=c.width,h=c.height;g.clearRect(0,0,w,h);const d=S.hist.map(o=>o.nw);if(d.length<2){g.fillStyle='#93a8b6';g.font='11px IBM Plex Sans';g.fillText('Fills in month by month.',4,34);return}
   const mn=Math.min(0,...d),mx=Math.max(...d,1);const px=k=>k/(d.length-1)*(w-6)+3,py=v=>h-4-(v-mn)/(mx-mn)*(h-10);
@@ -1050,13 +1258,13 @@ function drawSpark(){const c=$('spark');if(!c)return;const g=c.getContext('2d');
   g.fillStyle='#f0a63a';g.beginPath();g.arc(px(d.length-1),py(d[d.length-1]),2.5,0,7);g.fill()}
 let lastUI=0;
 function updateUI(force){const now=performance.now();if(!force&&now-lastUI<220)return;lastUI=now;updateHeader();if(UI.newsDirty){updateNews();UI.newsDirty=false}
-  if(UI.tab==='build')updateBuild();else if(UI.tab==='trains')updateTrainsTab();else if(UI.tab==='almanac')updateAlmanac();else updateLedger()}
+  if(UI.tab==='build')updateBuild();else if(UI.tab==='trains')updateTrainsTab();else if(UI.tab==='almanac')updateAlmanac();else if(UI.tab==='rivals')updateRivals();else updateLedger()}
 function hoverText(i){if(i<0)return'Hover the map to survey a tile.';const t=S.tiles[i];
   let s=`<b>${TER_NAME[t.t]}</b>${t.river?' · river (needs a bridge)':''}${t.flood&&!t.river?' · floodplain':''} · ${fmt(1800+t.e*9200)} ft`;
   if(t.town>=0){const tw=S.towns[t.town];s+=` · <b>${esc(tw.name)}</b> ${tw.ghost?'(abandoned)':fmt(tw.pop)}`}
   if(t.ind>=0){const d=S.inds[t.ind];s+=` · <b>${IND[d.type].name}</b>${d.closed?' (closed)':''}`}
   if(t.st>=0)s+=` · <b>${esc(S.stations[t.st].name)} station</b>`;
-  if(t.grade>0)s+=` · ${GRADE[t.grade]} track${t.closed?' · snowbound':''}${t.dmg===-1?' · washed out':''}`;
+  if(t.grade>0)s+=` · ${ownOf(i)?esc(RD(ownOf(i)).co)+' ':''}${GRADE[t.grade]} track${t.closed?' · snowbound':''}${t.dmg===-1?' · washed out':''}`;
   if(t.t!==T.WATER&&UI.tool==='track'){const g=UI.grade,fv=floodVuln(t,g),sn=snowThresh(t,g);s+=`<br>${GRADE[g]} here: <span class="num">${moneyFull(tileCost(i,g))}</span>${fv?` · flood exposure ${Math.round(fv*100)}%`:''}${sn<=2?` · ${['closes every winter','closes in snowy winters','closes in blizzards'][sn]}`:''}${!fv&&sn>2?' · all-weather':''}`}
   return s}
 
@@ -1066,19 +1274,19 @@ cv.addEventListener('mousemove',e=>{const i=tileAt(e);if(i!==UI.hover){UI.hover=
 cv.addEventListener('mouseleave',()=>{UI.hover=-1;$('hover').innerHTML=hoverText(-1)});
 cv.addEventListener('contextmenu',e=>{e.preventDefault();cancelSurvey()});
 cv.addEventListener('click',e=>{const i=tileAt(e);if(i<0||!S||S.over)return;UI.hover=i;
-  if(UI.tab==='trains'){const t=S.tiles[i];let st=t.st>=0?S.stations[t.st]:S.stations.find(s=>!s.dead&&cheb(s.tile,i)<=1);if(st){if(UI.stops[UI.stops.length-1]!==st.id)UI.stops.push(st.id)}updateUI(true);return}
+  if(UI.tab==='trains'){const t=S.tiles[i];let st=S.stations.find(s=>!s.dead&&s.owner===0&&s.tile===i)||S.stations.find(s=>!s.dead&&s.owner===0&&cheb(s.tile,i)<=1);if(st){if(UI.stops[UI.stops.length-1]!==st.id)UI.stops.push(st.id)}updateUI(true);return}
   if(UI.tool==='inspect'){UI.sel=i}
   else if(UI.tool==='station')buildStation(i);
   else if(UI.tool==='track'){
     if(UI.surveyStart<0){if(S.tiles[i].t===T.WATER||S.tiles[i].ind>=0)return news('Start the survey on dry land.','bad');UI.surveyStart=i}
     else{const from=UI.legs.length?UI.legs[UI.legs.length-1].slice(-1)[0]:UI.surveyStart;if(i===from)return;const p=survey(from,i,UI.grade,UI.pref);if(!p)news('The surveyors can’t find a route there.','bad');else UI.legs.push(p)}}
-  else if(UI.tool==='upgrade'){if(S.tiles[i].grade>0)doUpgrade(i)}
+  else if(UI.tool==='upgrade'){if(S.tiles[i].grade>0){if(ownOf(i))news(`That track belongs to the ${RD(ownOf(i)).co}.`,'bad');else doUpgrade(i)}}
   else if(UI.tool==='demolish')demolish(i);
   $('hover').innerHTML=hoverText(i);updateUI(true)});
 function cancelSurvey(){UI.legs=[];UI.surveyStart=-1;UI.ghost=null;UI.ghostKey='';updateUI(true)}
 function setTool(t){UI.tool=t;if(t!=='track')cancelSurvey();document.querySelectorAll('#tools button').forEach(b=>b.classList.toggle('on',b.dataset.tool===t));if(UI.tab!=='build')setTab('build');updateUI(true)}
-function setTab(t){UI.tab=t;document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));for(const n of['build','trains','almanac','ledger'])$('tab-'+n).hidden=n!==t;
-  for(const n of['almanac','ledger'])$(n).dataset.h='';$('roster').dataset.h='';updateUI(true)}
+function setTab(t){UI.tab=t;document.querySelectorAll('.tabs button').forEach(b=>b.classList.toggle('on',b.dataset.tab===t));for(const n of['build','trains','almanac','rivals','ledger'])$('tab-'+n).hidden=n!==t;
+  for(const n of['almanac','ledger','rivals'])$(n).dataset.h='';$('roster').dataset.h='';updateUI(true)}
 document.querySelectorAll('#tools button').forEach(b=>b.onclick=()=>setTool(b.dataset.tool));
 document.querySelectorAll('#grades button').forEach(b=>b.onclick=()=>{UI.grade=+b.dataset.grade;document.querySelectorAll('#grades button').forEach(x=>x.classList.toggle('on',x===b));UI.ghostKey='';
   // re-survey legs at new grade
@@ -1099,7 +1307,8 @@ document.addEventListener('click',e=>{const b=e.target.closest('[data-act]');if(
   else if(a==='tele'){if(S.cash>=25000){spend('other',25000);S.telegraph=true;news('Weather Bureau telegraph subscribed. Forecasts improve from next season.','good')}}
   else if(a==='borrow'){if(S.debt<LOAN_MAX){S.debt+=LOAN_STEP;S.cash+=LOAN_STEP}}
   else if(a==='repay'){if(S.debt>0&&S.cash>=LOAN_STEP){S.debt-=LOAN_STEP;S.cash-=LOAN_STEP}}
-  for(const n of['almanac','ledger'])$(n).dataset.h='';updateUI(true)});
+  else rivalAction(a,b);
+  for(const n of['almanac','ledger','rivals'])$(n).dataset.h='';updateUI(true)});
 document.addEventListener('change',e=>{if(e.target.id==='autoRep'){S.autoRepair=e.target.checked;if(S.autoRepair)autoRepair()}});
 document.addEventListener('keydown',e=>{if(!S||e.target.matches('input,select'))return;const k=e.key.toLowerCase();
   if(k===' '){e.preventDefault();setSpeed(UI.speed?0:UI.prevSpeed||1);if(UI.speed)UI.prevSpeed=UI.speed}
@@ -1129,6 +1338,6 @@ $('contGame').onclick=()=>{$('intro').hidden=true;start(0,saved);setSpeed(1)};
 $('reroll').onclick=()=>{pendingSeed=Math.floor(Math.random()*1e9);$('seedLine').textContent=`Map seed ${pendingSeed}`;start(pendingSeed)};
 start(pendingSeed);
 requestAnimationFrame(frame);
-window.__IS={get S(){return S},UI,tick,buildStation,survey,commitTrack,buyTrain,MODELS,setTool,netWorth,totalPop,score,start};
+window.__IS={get S(){return S},rivalAction,resolveProposal,sharePrice,rivalNW,absorb,UI,tick,buildStation,survey,commitTrack,buyTrain,MODELS,setTool,netWorth,totalPop,score,start};
 })();
 </script>
