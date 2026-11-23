@@ -75,8 +75,9 @@ const MISSIONS=[
  {name:'Federal Reserve Branch',loot:110000,guards:6,drill:26,heatMul:1.3,civs:26,dmgMul:1.2,blurb:'Armed to the teeth. The vault takes forever. Pack heavy.'}
 ];
 const HEAT_TH=[20,50,85,125,170];
-const STAR_CAP=[0,5,8,11,14,17];
-const STAR_INT=[99,9,7,5.5,4.5,3.6];
+const STAR_CAP=[0,3,5,10,14,17];
+const STAR_DMG=[1,.45,.65,.9,1,1];
+const STAR_INT=[99,12,9,5.5,4.5,3.6];
 
 /* ---------------- save ---------------- */
 const SAVE_KEY='heistcity.v1';
@@ -292,7 +293,7 @@ function newGame(mi){
   // getaway car
   const L=save.up.ride;
   const gc=mkCar('get',bank.ent.x+90,((bank.cy+1)*CELL+1.5)*T,0,'#e8a317');
-  gc.hp=gc.maxhp=130+35*L;gc.maxSpeed=310+28*L;gc.accel=410+40*L;G.cars.push(gc);
+  gc.hp=gc.maxhp=130+35*L;gc.maxSpeed=400+32*L;gc.accel=560+50*L;G.cars.push(gc);
   // parked civilian cars
   for(let i=0;i<11;i++){
     const horiz=Math.random()<.5,k=rint(0,NB),edge=Math.random()<.5?0:3;
@@ -505,9 +506,9 @@ function updOffs(dt){
       if(dp>o.pref+30){mvx=Math.cos(aim);mvy=Math.sin(aim);moving=true}
       else if(dp<o.pref-70){mvx=-Math.cos(aim)*.6;mvy=-Math.sin(aim)*.6;moving=true}
       if(o.react<=0&&o.cool<=0&&dp<o.range&&Math.abs(angDiff(o.a,aim))<.35){
-        o.cool=o.rate*rnd(.85,1.3);
+        o.cool=o.rate*rnd(.85,1.3)*(o.kind==='guard'?1:(G.stars<=2?1.5:1));
         const a=o.a+rnd(-o.spread,o.spread)*(1+dp/450);
-        G.bullets.push({x:o.x+Math.cos(o.a)*14,y:o.y+Math.sin(o.a)*14,vx:Math.cos(a)*640,vy:Math.sin(a)*640,dmg:o.dmg,own:1,life:o.range/640+.3});
+        G.bullets.push({x:o.x+Math.cos(o.a)*14,y:o.y+Math.sin(o.a)*14,vx:Math.cos(a)*640,vy:Math.sin(a)*640,dmg:o.dmg*(o.kind==='guard'?1:STAR_DMG[G.stars]),own:1,life:o.range/640+.3});
         sfx('eshot');
       }
     }else{
