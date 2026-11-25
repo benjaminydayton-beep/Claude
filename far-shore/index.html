@@ -1400,7 +1400,7 @@ function start(data){
   requestAnimationFrame(t=>{last=t;requestAnimationFrame(frame);});
 }
 window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??{});
-window.__sp=SPECIES;window.__lures=LURE;
-window.__farShore={halt(){halted=true;},step(n,dt){for(let i=0;i<n;i++){update(dt);if(i%20===0)render(envAt(L,state.hour,state.weather));}},press,release,sell(){closeCatch(true);},get fight(){return fight;},get active(){return activeFish;},get lure(){return lure;},get power(){return power;},populate,get state(){return state;},travel:id=>{if(!state.unlocked.includes(id))state.unlocked.push(id);travel(id,true);},setHour:h=>{state.hour=h;},setWeather:w=>{state.weather=w;L.clouds=genClouds(w,5);},get mode(){return mode;},get fish(){return fish;}};
+window.__sp=SPECIES;window.__lures=LURE;window.__locs=LOC;window.__gear={rod:ROD,reel:REEL,line:LINE,boat:BOAT,lure:LURE};
+window.__farShore={halt(){halted=true;},step(n,dt){for(let i=0;i<n;i++){update(dt);if(i%400===0)render(envAt(L,state.hour,state.weather));}},press,release,sell(){closeCatch(true);},get fight(){return fight;},get active(){return activeFish;},get lure(){return lure;},get power(){return power;},populate,get state(){return state;},travel:id=>{if(!state.unlocked.includes(id))state.unlocked.push(id);travel(id,true);},setHour:h=>{state.hour=h;},setWeather:w=>{state.weather=w;L.clouds=genClouds(w,5);},get mode(){return mode;},get fish(){return fish;}};
 })();
 </script>
