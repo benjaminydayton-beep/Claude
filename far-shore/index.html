@@ -237,7 +237,7 @@ p{margin:0}
 </div>
 
 <div class="modal" id="catchModal" hidden>
-  <div class="catch" role="dialog" aria-modal="true" aria-labelledby="cName">
+  <div class="catch" id="catchWin" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="cName">
     <div class="row" style="display:flex;justify-content:space-between;align-items:baseline;gap:8px">
       <h2 id="cName">Largemouth Bass</h2><span class="muted" id="cSci" style="font-style:italic;font-size:13px"></span>
     </div>
@@ -253,6 +253,7 @@ p{margin:0}
       <button class="btn" id="cRelease" type="button">Release</button>
       <button class="btn primary" id="cSell" type="button">Sell</button>
     </div>
+    <p class="muted" style="font-size:12px;text-align:right">Let go of Space, then press it again to sell · R to release</p>
   </div>
 </div>
 
@@ -1118,11 +1119,19 @@ const stage=$('stage');
 stage.addEventListener('pointerdown',e=>{if(e.button>0||e.target.closest('.ctl'))return;e.preventDefault();try{stage.setPointerCapture(e.pointerId);}catch(_){}stage.focus({preventScroll:true});press();});
 stage.addEventListener('pointerup',release);stage.addEventListener('pointercancel',release);stage.addEventListener('lostpointercapture',release);
 document.addEventListener('keydown',e=>{
+  if(e.code==='Space')spaceDown=true;
+  if(!$('catchModal').hidden){
+    // a Space or Enter that was already held from reeling must not sell the fish; only a fresh press after release counts
+    const onBtn=document.activeElement&&document.activeElement.closest&&document.activeElement.closest('.catch .btn');
+    if((e.code==='Space'||e.code==='Enter')){e.preventDefault();if(!e.repeat&&catchArmed)(onBtn?document.activeElement.click():closeCatch(true));}
+    else if(e.code==='KeyR'&&catchArmed&&!e.repeat)closeCatch(false);
+    return;}
   if(e.code==='Escape'&&menuOpen){closeMenu();return;}
   const tg0=document.activeElement;const typing=tg0&&(tg0.tagName==='SELECT'||tg0.tagName==='INPUT');
   if(!typing&&!e.repeat&&$('catchModal').hidden&&!holding){const k={KeyS:'shop',KeyJ:'journal',KeyM:'travel',KeyL:'log',KeyH:'guide'}[e.code];if(k){if(menuOpen&&tab===k)closeMenu();else openMenu(k);return;}}
   if(e.code!=='Space'||e.repeat||menuOpen)return;const tg=document.activeElement;if(tg&&tg!==document.body&&tg!==stage)return;e.preventDefault();press();});
-document.addEventListener('keyup',e=>{if(e.code==='Space')release();});
+document.addEventListener('keyup',e=>{if(e.code==='Space'){spaceDown=false;release();if(!$('catchModal').hidden)armCatch();}});
+document.addEventListener('pointerup',()=>{if(!$('catchModal').hidden&&!spaceDown)armCatch();});
 window.addEventListener('blur',release);
 
 /* ============================== game logic ============================== */
@@ -1333,9 +1342,12 @@ function showCatch(c){
   $('cNote').textContent=c.sp.fact;
   const S=fishSprite(c.sp,56);cc.width=S.w+16;cc.height=Math.max(S.h+8,28);cx.imageSmoothingEnabled=false;cx.clearRect(0,0,cc.width,cc.height);cx.drawImage(S.r[0],8,Math.round((cc.height-S.h)/2));cardAnim={S,cc,t:0};
   $('cSell').textContent='Sell for '+money(c.val+c.bonus);$('cRelease').textContent=c.bonus?'Release (keep '+money(c.bonus)+' bonus)':'Release';
-  m.hidden=false;$('cSell').focus();
+  m.hidden=false;$('catchWin').focus({preventScroll:true});
+  catchArmed=false;catchShownAt=performance.now();if(!holding&&!spaceDown)armCatch();
 }
-function closeCatch(sell){
+let catchArmed=false,catchShownAt=0,spaceDown=false,armTimer=0;
+function armCatch(){clearTimeout(armTimer);const wait=Math.max(0,500-(performance.now()-catchShownAt));armTimer=setTimeout(()=>{if(!spaceDown)catchArmed=true;},wait);}
+function closeCatch(sell){if(!catchArmed)return;
   const c=pendingCatch;if(!c)return;pendingCatch=null;
   const earned=(sell?c.val:0)+c.bonus;state.money+=earned;state.caught++;
   state.log.unshift({id:c.sp.id,w:c.w,loc:L.id,val:earned,h:state.hour,rel:!sell});state.log=state.log.slice(0,40);
