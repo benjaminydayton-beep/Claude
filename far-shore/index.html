@@ -18,8 +18,9 @@ body{font-family:var(--body);font-size:15px;line-height:1.45}
 [hidden]{display:none!important}
 button,select{font:inherit;color:inherit}
 button{cursor:pointer}
-button:focus-visible,select:focus-visible,.stage:focus-visible{outline:2px solid var(--lantern);outline-offset:2px}
-.app{max-width:1180px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 48px;display:flex;flex-direction:column;gap:12px}
+button:focus-visible,select:focus-visible{outline:2px solid var(--lantern);outline-offset:2px}
+.screen:focus-visible{outline:none}
+html,body{height:100%;overflow:hidden}
 h1,h2,h3{font-family:var(--display);font-weight:600;margin:0;letter-spacing:.02em;text-wrap:balance}
 h1{font-size:clamp(28px,4.4vw,40px);line-height:1;font-weight:700}
 h2{font-size:20px}
@@ -27,22 +28,42 @@ h3{font-size:16px}
 p{margin:0}
 .num{font-family:var(--display);font-variant-numeric:tabular-nums}
 .muted{color:var(--muted)}
-.top{display:flex;flex-wrap:wrap;align-items:flex-end;gap:10px 24px}
-.brand{display:flex;flex-direction:column;gap:2px;margin-right:auto;min-width:0}
+.screen{position:fixed;inset:0;display:grid;place-items:center;background:radial-gradient(ellipse at 50% 40%,#132230,#05080c 75%);touch-action:none;user-select:none;-webkit-user-select:none;cursor:pointer;overflow:hidden}
+.view{position:relative;width:384px;height:216px;box-shadow:0 0 0 1px #0b1218,0 20px 60px rgba(0,0,0,.5)}
+.view canvas{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges}
+.hud{position:absolute;left:0;right:0;z-index:5;display:flex;flex-wrap:wrap;gap:8px 12px;justify-content:space-between;pointer-events:none;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));transition:opacity .25s}
+.hud-top{top:0;align-items:flex-start;padding-top:calc(env(safe-area-inset-top,0px) + 10px);padding-bottom:18px;background:linear-gradient(rgba(5,8,12,.62),rgba(5,8,12,0))}
+.hud-bottom{bottom:0;align-items:flex-end;padding-bottom:calc(env(safe-area-inset-bottom,0px) + 10px);padding-top:18px;background:linear-gradient(rgba(5,8,12,0),rgba(5,8,12,.62))}
+.screen.fighting .hud-bottom{opacity:0}
+.ctl{pointer-events:auto;cursor:default}
+.brand{display:flex;flex-direction:column;gap:1px;min-width:0;text-shadow:0 2px 0 rgba(0,0,0,.6)}
+.brand h1{font-size:clamp(20px,2.6vw,30px);line-height:1}
 .brand h1 span{color:var(--lantern)}
-.brand p{color:var(--muted);font-size:14px}
-.stats{display:flex;gap:6px 20px;flex-wrap:wrap}
-.stat{display:flex;flex-direction:column}
-.stat small{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
-.stat b{font-family:var(--display);font-size:20px;font-weight:600;font-variant-numeric:tabular-nums}
+.brand p{color:#d8d4c6;font-size:13px}
+.right{display:flex;flex-direction:column;align-items:flex-end;gap:8px}
+.stats{display:flex;gap:4px 16px;flex-wrap:wrap;justify-content:flex-end;text-shadow:0 2px 0 rgba(0,0,0,.6)}
+.stat{display:flex;flex-direction:column;align-items:flex-end}
+.stat small{font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:#c4c8cc}
+.stat b{font-family:var(--display);font-size:clamp(16px,1.8vw,20px);font-weight:600;font-variant-numeric:tabular-nums}
 .stat b.cash{color:var(--lantern)}
+.menubar{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.menubar .btn{padding:4px 10px;font-size:14px;background:rgba(21,30,41,.85)}
+.menubar .btn.shop{background:var(--lantern);color:var(--lantern-ink);border-color:#ffd88a}
+.chipbox{display:flex;flex-wrap:wrap;align-items:flex-end;gap:6px 16px;background:rgba(13,19,27,.78);border:2px solid var(--edge);padding:6px 10px}
+.rotate{position:absolute;left:50%;transform:translateX(-50%);bottom:calc(env(safe-area-inset-bottom,0px) + 140px);font-family:var(--display);font-size:13px;color:var(--muted);pointer-events:none;display:none;white-space:nowrap}
+@media (orientation:portrait) and (max-width:700px){.rotate{display:block}}
+.menu{position:fixed;inset:0;z-index:20;background:rgba(4,7,10,.62);display:flex;align-items:center;justify-content:center;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:calc(env(safe-area-inset-top,0px) + 12px) calc(env(safe-area-inset-bottom,0px) + 12px)}
+.menu-win{width:min(1060px,100%);max-height:100%;display:flex;flex-direction:column;background:var(--panel);border:2px solid var(--lantern);box-shadow:0 6px 0 #05080c;min-height:0}
+.menu-head{display:flex;align-items:flex-end;gap:8px 12px;flex-wrap:wrap;padding:10px 12px 0;border-bottom:2px solid var(--edge)}
+.menu-head .tabs{border:none;flex:1;min-width:0}
+.menu-head .mcash{font-family:var(--display);color:var(--lantern);font-size:18px;padding-bottom:8px;font-variant-numeric:tabular-nums}
+.menu-head .close{margin-bottom:6px}
+.menu .drawer{overflow:auto;border:none;min-height:0;flex:1}
 
-.stage{position:relative;width:100%;aspect-ratio:16/9;max-width:100%;background:#000;border:2px solid var(--edge);box-shadow:0 4px 0 #070a0e;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none;cursor:pointer}
-.stage canvas{display:block;width:100%;height:100%;image-rendering:pixelated;image-rendering:crisp-edges}
-.prompt{position:absolute;left:50%;top:6%;transform:translateX(-50%);font-family:var(--display);font-size:clamp(12px,2.2vw,20px);color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.65);white-space:nowrap;pointer-events:none;letter-spacing:.03em}
+.prompt{position:absolute;left:50%;top:21%;transform:translateX(-50%);font-family:var(--display);font-size:clamp(12px,2.2vw,20px);color:#fff;text-shadow:0 2px 0 rgba(0,0,0,.65);white-space:nowrap;pointer-events:none;letter-spacing:.03em}
 .prompt.hot{color:var(--lantern);font-size:clamp(18px,4vw,36px);animation:throb .35s steps(2) infinite}
 @keyframes throb{50%{transform:translateX(-50%) scale(1.08)}}
-.toast{position:absolute;left:50%;top:18%;transform:translateX(-50%);background:rgba(10,14,20,.82);border:2px solid var(--edge-hi);padding:6px 12px;font-family:var(--display);font-size:clamp(12px,1.8vw,16px);pointer-events:none;opacity:0;transition:opacity .25s;max-width:90%;text-align:center}
+.toast{position:absolute;left:50%;top:33%;transform:translateX(-50%);background:rgba(10,14,20,.82);border:2px solid var(--edge-hi);padding:6px 12px;font-family:var(--display);font-size:clamp(12px,1.8vw,16px);pointer-events:none;opacity:0;transition:opacity .25s;max-width:90%;text-align:center}
 .toast.on{opacity:1}
 .meter{position:absolute;left:50%;bottom:7%;transform:translateX(-50%);width:min(46%,360px);pointer-events:none}
 .bar{height:clamp(8px,1.6vw,14px);background:rgba(8,12,18,.78);border:2px solid #0a0e14;position:relative;overflow:hidden}
@@ -57,11 +78,9 @@ p{margin:0}
 .fade{position:absolute;inset:0;background:#05080c;opacity:0;pointer-events:none;transition:opacity .45s;display:grid;place-items:center;font-family:var(--display);font-size:clamp(16px,3vw,28px);color:var(--fg)}
 .fade.on{opacity:1}
 
-.strip{display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px;background:var(--panel);border:2px solid var(--edge);padding:8px 12px}
-.gauge{display:flex;flex-direction:column;min-width:0}
+.gauge{display:flex;flex-direction:column;min-width:0;text-shadow:0 1px 0 rgba(0,0,0,.6)}
 .gauge small{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
 .gauge b{font-family:var(--display);font-weight:600;font-size:16px;font-variant-numeric:tabular-nums;white-space:nowrap}
-.strip .spacer{flex:1}
 .lure-pick{display:flex;flex-direction:column}
 .lure-pick select{background:var(--panel-2);border:2px solid var(--edge-hi);padding:4px 6px;max-width:220px}
 .btn{background:var(--panel-2);border:2px solid var(--edge-hi);padding:6px 12px;font-family:var(--display);font-size:15px;box-shadow:0 3px 0 #070a0e;transition:transform .05s}
@@ -74,6 +93,14 @@ p{margin:0}
 .tab{background:transparent;border:2px solid transparent;border-bottom:none;padding:8px 14px;font-family:var(--display);font-size:16px;color:var(--muted);margin-bottom:-2px}
 .tab[aria-selected="true"]{background:var(--panel);border-color:var(--edge);color:var(--fg);box-shadow:inset 0 3px 0 var(--lantern)}
 .drawer{background:var(--panel);border:2px solid var(--edge);border-top:none;padding:16px;min-height:200px}
+.setup{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:8px;margin-bottom:14px}
+.slot{text-align:left;background:var(--panel-2);border:2px solid var(--edge);padding:8px 10px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.slot:hover{border-color:var(--edge-hi)}
+.slot[aria-pressed="true"]{border-color:var(--lantern);box-shadow:inset 0 3px 0 var(--lantern)}
+.slot small{font-size:10.5px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted)}
+.slot b{font-family:var(--display);font-weight:600;font-size:15px}
+.slot .next{font-size:12.5px;color:var(--muted)}
+.slot .next.ready{color:var(--reed)}
 .sub-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
 .chip{background:var(--panel-2);border:2px solid var(--edge);padding:4px 10px;font-family:var(--display);font-size:14px;color:var(--muted)}
 .chip[aria-pressed="true"]{border-color:var(--lantern);color:var(--fg)}
@@ -119,29 +146,28 @@ p{margin:0}
 @media (max-width:560px){
   .fight{grid-template-columns:1fr;gap:3px;bottom:3%}
   .fight label{margin-bottom:0}
-  .strip{gap:8px 12px}
-  .gauge b{font-size:14px}
+    .gauge b{font-size:14px}
   .tab{padding:6px 9px;font-size:14px}
 }
+@media (max-height:500px){
+  .brand p,.gauge small,.stat small{display:none}
+  .hud-top{padding-top:calc(env(safe-area-inset-top,0px) + 6px)}
+  .menubar .btn{font-size:12px;padding:2px 7px}
+  .chipbox{padding:4px 8px}
+  .gauge b{font-size:13px}
+  .right{gap:4px}
+  .lure-pick select{font-size:13px;padding:2px 4px}
+  .chipbox .btn{font-size:13px;padding:3px 8px}
+  .menu-head .tab{padding:4px 8px;font-size:13px}
+}
+@media (max-width:640px){.gauge.bite{display:none}.menubar .btn{font-size:12.5px;padding:3px 7px}}
 @media (prefers-reduced-motion:reduce){
   .prompt.hot,.fight .tension.strain,.catch{animation:none}
 }
 </style>
 
-<div class="app">
-  <header class="top">
-    <div class="brand">
-      <h1>Far <span>Shore</span></h1>
-      <p id="locSub">Bennett Hollow Pond · Missouri Ozarks</p>
-    </div>
-    <div class="stats">
-      <div class="stat"><small>Cash</small><b class="cash" id="sCash">$0</b></div>
-      <div class="stat"><small>Fish landed</small><b id="sCaught">0</b></div>
-      <div class="stat"><small>Species</small><b id="sSpecies">0/51</b></div>
-    </div>
-  </header>
-
-  <section class="stage" id="stage" tabindex="0" aria-label="Fishing view. Hold Space or press and hold to cast and reel.">
+<div class="screen" id="stage" tabindex="0" aria-label="Fishing view. Hold Space or press and hold to cast and reel.">
+  <div class="view" id="view">
     <canvas id="game" width="384" height="216"></canvas>
     <div class="prompt" id="prompt"></div>
     <div class="toast" id="toast"></div>
@@ -152,27 +178,62 @@ p{margin:0}
       <div class="line"><label><span>Line out</span><span id="lTxt">0 yd</span></label><div class="bar"><i id="lFill"></i></div></div>
     </div>
     <div class="fade" id="fade"><span id="fadeTxt"></span></div>
-  </section>
-
-  <div class="strip">
-    <div class="gauge"><small>Time</small><b id="gClock">6:00 AM</b></div>
-    <div class="gauge"><small>Weather</small><b id="gWeather">Clear · 48°F</b></div>
-    <div class="gauge"><small>Lure depth</small><b id="gDepth">—</b></div>
-    <div class="gauge"><small>Bite window</small><b id="gBite">Dawn bite</b></div>
-    <div class="spacer"></div>
-    <label class="lure-pick"><small class="muted" style="font-size:11px;text-transform:uppercase;letter-spacing:.1em">Lure</small><select id="lureSel"></select></label>
-    <button class="btn" id="restBtn" type="button">Wait 3 h</button>
-    <button class="btn" id="sndBtn" type="button" aria-pressed="false">Sound off</button>
   </div>
 
-  <nav class="tabs" role="tablist">
-    <button class="tab" role="tab" data-tab="shop" aria-selected="true">Tackle Shop</button>
-    <button class="tab" role="tab" data-tab="journal" aria-selected="false">Fish Journal</button>
-    <button class="tab" role="tab" data-tab="travel" aria-selected="false">Travel</button>
-    <button class="tab" role="tab" data-tab="log" aria-selected="false">Catch Log</button>
-    <button class="tab" role="tab" data-tab="guide" aria-selected="false">How to Fish</button>
-  </nav>
-  <section class="drawer" id="drawer"></section>
+  <header class="hud hud-top">
+    <div class="brand">
+      <h1>Far <span>Shore</span></h1>
+      <p id="locSub">Bennett Hollow Pond · Missouri Ozarks</p>
+    </div>
+    <div class="right">
+      <div class="stats">
+        <div class="stat"><small>Cash</small><b class="cash" id="sCash">$0</b></div>
+        <div class="stat"><small>Landed</small><b id="sCaught">0</b></div>
+        <div class="stat"><small>Species</small><b id="sSpecies">0/51</b></div>
+      </div>
+      <nav class="menubar ctl" aria-label="Menus">
+        <button class="btn shop" type="button" data-open="shop">Shop <span class="muted" style="color:inherit;opacity:.6">S</span></button>
+        <button class="btn" type="button" data-open="journal">Journal</button>
+        <button class="btn" type="button" data-open="travel">Map</button>
+        <button class="btn" type="button" data-open="log">Log</button>
+        <button class="btn" type="button" data-open="guide">Help</button>
+        <button class="btn" id="sndBtn" type="button" aria-pressed="false">Sound off</button>
+        <button class="btn" id="fsBtn" type="button">Full screen</button>
+      </nav>
+    </div>
+  </header>
+
+  <div class="rotate">Turn your phone sideways for a bigger view</div>
+
+  <footer class="hud hud-bottom">
+    <div class="chipbox">
+      <div class="gauge"><small>Time</small><b id="gClock">6:00 AM</b></div>
+      <div class="gauge"><small>Weather</small><b id="gWeather">Clear · 48°F</b></div>
+      <div class="gauge"><small>Lure depth</small><b id="gDepth">—</b></div>
+      <div class="gauge bite"><small>Bite</small><b id="gBite">Dawn bite</b></div>
+    </div>
+    <div class="chipbox ctl">
+      <label class="lure-pick"><small class="muted" style="font-size:10.5px;text-transform:uppercase;letter-spacing:.1em">Lure</small><select id="lureSel"></select></label>
+      <button class="btn" id="restBtn" type="button">Wait 3 h</button>
+    </div>
+  </footer>
+</div>
+
+<div class="menu" id="menu" hidden>
+  <div class="menu-win" role="dialog" aria-modal="true" aria-label="Menu">
+    <div class="menu-head">
+      <nav class="tabs" role="tablist">
+        <button class="tab" role="tab" data-tab="shop" aria-selected="true">Tackle Shop</button>
+        <button class="tab" role="tab" data-tab="journal" aria-selected="false">Fish Journal</button>
+        <button class="tab" role="tab" data-tab="travel" aria-selected="false">Map</button>
+        <button class="tab" role="tab" data-tab="log" aria-selected="false">Catch Log</button>
+        <button class="tab" role="tab" data-tab="guide" aria-selected="false">How to Fish</button>
+      </nav>
+      <span class="mcash" id="mCash">$0</span>
+      <button class="btn close" id="menuClose" type="button">Back to the water <span style="opacity:.6">Esc</span></button>
+    </div>
+    <section class="drawer" id="drawer"></section>
+  </div>
 </div>
 
 <div class="modal" id="catchModal" hidden>
@@ -1005,7 +1066,7 @@ function drawLineSeg(c,ax,ay,bx,by,sag){let px=ax,py=ay;const n=Math.max(6,Math.
 
 /* ============================== input ============================== */
 function press(){
-  audioInit();if(paused||!$('catchModal').hidden)return;holding=true;
+  audioInit();if(menuOpen||paused||!$('catchModal').hidden)return;holding=true;
   if(mode==='idle'){mode='charging';powerT=0;power=0;}
   else if(mode==='water'&&activeFish){
     if(activeFish.state==='bite')hookFish(activeFish);
@@ -1014,9 +1075,13 @@ function press(){
 }
 function release(){if(!holding)return;holding=false;if(mode==='charging')doCast();}
 const stage=$('stage');
-stage.addEventListener('pointerdown',e=>{if(e.button>0)return;e.preventDefault();try{stage.setPointerCapture(e.pointerId);}catch(_){}stage.focus({preventScroll:true});press();});
+stage.addEventListener('pointerdown',e=>{if(e.button>0||e.target.closest('.ctl'))return;e.preventDefault();try{stage.setPointerCapture(e.pointerId);}catch(_){}stage.focus({preventScroll:true});press();});
 stage.addEventListener('pointerup',release);stage.addEventListener('pointercancel',release);stage.addEventListener('lostpointercapture',release);
-document.addEventListener('keydown',e=>{if(e.code!=='Space'||e.repeat)return;const tg=document.activeElement;if(tg&&tg!==document.body&&tg!==stage)return;e.preventDefault();press();});
+document.addEventListener('keydown',e=>{
+  if(e.code==='Escape'&&menuOpen){closeMenu();return;}
+  const tg0=document.activeElement;const typing=tg0&&(tg0.tagName==='SELECT'||tg0.tagName==='INPUT');
+  if(!typing&&!e.repeat&&$('catchModal').hidden&&!holding){const k={KeyS:'shop',KeyJ:'journal',KeyM:'travel',KeyL:'log',KeyH:'guide'}[e.code];if(k){if(menuOpen&&tab===k)closeMenu();else openMenu(k);return;}}
+  if(e.code!=='Space'||e.repeat||menuOpen)return;const tg=document.activeElement;if(tg&&tg!==document.body&&tg!==stage)return;e.preventDefault();press();});
 document.addEventListener('keyup',e=>{if(e.code==='Space')release();});
 window.addEventListener('blur',release);
 
@@ -1172,7 +1237,7 @@ function render(env){
     }
   });
 }
-function frame(now){if(halted)return;const dt=Math.min(.05,(now-last)/1000);last=now;const env=update(dt);render(env);
+function frame(now){if(halted)return;const dt=Math.min(.05,(now-last)/1000);last=now;let env;if(menuOpen){T+=dt;updParts(dt);env=envAt(L,state.hour,state.weather);}else env=update(dt);render(env);
   if(cardAnim&&!$('catchModal').hidden){const A=cardAnim;A.t+=dt;const fi=Math.floor(A.t*FISH_FRAMES*2.4)%FISH_FRAMES,cx=A.cc.getContext('2d');cx.clearRect(0,0,A.cc.width,A.cc.height);cx.drawImage(A.S.r[fi],8,Math.round((A.cc.height-A.S.h)/2)+(Math.sin(A.t*9)>.6?-1:0));}
   requestAnimationFrame(frame);}
 
@@ -1204,10 +1269,10 @@ function updateHUD(env){
     $('tFill').style.width=Math.round(clamp(F.T/1.2,0,1)*100)+'%';$('tTxt').textContent=Math.round(F.T*cap/g.rod.power)+' / '+g.line.test+' lb';$('tWrap').classList.toggle('strain',F.T>1);
     $('sFill').style.width=Math.round(F.S*100)+'%';$('sTxt').textContent=Math.round(F.S*100)+'%';$('fName').textContent=state.journal[F.f.sp.id]?F.f.sp.name:'Unknown fish';
     $('lFill').style.width=Math.round(clamp(F.lineOut/g.reel.cap,0,1)*100)+'%';$('lTxt').textContent=Math.round(F.lineOut)+' / '+g.reel.cap+' yd';}
-  $('restBtn').disabled=mode==='fight'||mode==='catch';
+  $('restBtn').disabled=mode==='fight'||mode==='catch';stage.classList.toggle('fighting',mode==='fight');
 }
 function updateHeader(){
-  $('sCash').textContent=money(state.money);$('sCaught').textContent=state.caught;$('sSpecies').textContent=Object.keys(state.journal).length+'/'+SPECIES.length;
+  $('sCash').textContent=money(state.money);$('mCash').textContent=money(state.money);$('sCaught').textContent=state.caught;$('sSpecies').textContent=Object.keys(state.journal).length+'/'+SPECIES.length;
   $('locSub').textContent=L.name+' · '+L.region;
   const sel=$('lureSel'),owned=state.owned.lure;sel.innerHTML=owned.map(id=>`<option value="${id}" ${id===state.gear.lure?'selected':''}>${LURE[id].name}</option>`).join('');
   $('sndBtn').textContent=state.sound?'Sound on':'Sound off';$('sndBtn').setAttribute('aria-pressed',state.sound?'true':'false');
@@ -1240,7 +1305,21 @@ $('cSell').addEventListener('click',()=>closeCatch(true));$('cRelease').addEvent
 
 /* ============================== drawer ============================== */
 let tab='shop',shopCat='rod',jFilter='here';
-document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>{tab=b.dataset.tab;document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',x===b?'true':'false'));renderDrawer();}));
+function setTab(t){tab=t;document.querySelectorAll('.tab').forEach(x=>x.setAttribute('aria-selected',x.dataset.tab===t?'true':'false'));renderDrawer();$('drawer').scrollTop=0;}
+document.querySelectorAll('.tab').forEach(b=>b.addEventListener('click',()=>setTab(b.dataset.tab)));
+let menuOpen=false;
+function openMenu(t){if(mode==='fight'){toast('Land or lose this fish first.');return;}if(mode==='charging'){holding=false;mode='idle';}if(mode==='water')endRetrieve();
+  release();menuOpen=true;$('menu').hidden=false;setTab(t||tab);const sel=document.querySelector('.tab[aria-selected="true"]');sel&&sel.focus();}
+function closeMenu(){menuOpen=false;$('menu').hidden=true;stage.focus({preventScroll:true});}
+document.querySelectorAll('[data-open]').forEach(b=>b.addEventListener('click',()=>openMenu(b.dataset.open)));
+$('menuClose').addEventListener('click',closeMenu);
+$('menu').addEventListener('pointerdown',e=>{if(e.target===$('menu'))closeMenu();});
+const fsBtn=$('fsBtn');
+if(!document.fullscreenEnabled)fsBtn.hidden=true;
+fsBtn.addEventListener('click',async()=>{try{if(document.fullscreenElement)await document.exitFullscreen();else await document.documentElement.requestFullscreen();}catch(e){toast('Full screen isn\'t available here. The game already fills the window.');}});
+document.addEventListener('fullscreenchange',()=>{fsBtn.textContent=document.fullscreenElement?'Exit full screen':'Full screen';fit();});
+function fit(){const v=window.visualViewport,sw=v?v.width:innerWidth,sh=v?v.height:innerHeight,sc=Math.min(sw/W,sh/H);$('view').style.width=Math.floor(W*sc)+'px';$('view').style.height=Math.floor(H*sc)+'px';}
+addEventListener('resize',fit);window.visualViewport&&visualViewport.addEventListener('resize',fit);fit();
 const CATS={rod:['Rods',RODS],reel:['Reels',REELS],line:['Line',LINES],lure:['Lures',LURES],boat:['Boats',BOATS]};
 function statLines(cat,it){
   if(cat==='rod')return [['Power',it.power.toFixed(1)+'×'],['Cast',Math.round(it.cast/PXYD)+' yd'],['Overload grace',it.grace.toFixed(2)+' s'],['Hookset',Math.round(it.set*100)+'%']];
@@ -1253,12 +1332,16 @@ function renderDrawer(){
   const d=$('drawer');
   if(tab==='shop'){
     const [label,items]=CATS[shopCat];
-    d.innerHTML=`<div class="sub-tabs">${Object.entries(CATS).map(([k,v])=>`<button class="chip" data-cat="${k}" aria-pressed="${k===shopCat}">${v[0]}</button>`).join('')}</div>
+    const SLOT={rod:'Rod',reel:'Reel',line:'Line',lure:'Lures',boat:'Boat'};
+    d.innerHTML=`<div class="setup" role="group" aria-label="Your setup">${Object.entries(CATS).map(([k,v])=>{const list=v[1],cur=list.find(i=>i.id===state.gear[k]);
+        const next=k==='lure'?list.filter(i=>!state.owned.lure.includes(i.id)).sort((a,b)=>a.price-b.price)[0]:list.slice(list.indexOf(cur)+1).find(i=>!state.owned[k].includes(i.id));
+        const nx=next?`<span class="next ${state.money>=next.price?'ready':''}">Next: ${next.name} · ${money(next.price)}</span>`:'<span class="next">Top of the line</span>';
+        return `<button class="slot" data-cat="${k}" aria-pressed="${k===shopCat}"><small>${SLOT[k]}${k==='lure'?' · '+state.owned.lure.length+' of '+LURES.length+' owned':''}</small><b>${cur.name}</b>${nx}</button>`;}).join('')}</div>
     <div class="grid">${items.map(it=>{const own=state.owned[shopCat].includes(it.id),eq=state.gear[shopCat]===it.id,afford=state.money>=it.price;
       return `<div class="card ${eq?'equipped':''}"><div class="row"><h3>${it.name}</h3>${eq?'<span class="tag ok">In use</span>':own?'<span class="tag">Owned</span>':''}</div>
       <p>${it.desc}</p><div class="spec">${statLines(shopCat,it).map(([a,b])=>`<span>${a}</span><b>${b}</b>`).join('')}</div>
       <div class="row">${own?'<span></span>':`<span class="price">${it.price?money(it.price):'Free'}</span>`}
-      ${eq?'':own?`<button class="btn" data-eq="${it.id}">Use</button>`:`<button class="btn primary" data-buy="${it.id}" ${afford?'':'disabled'}>Buy</button>`}</div></div>`;}).join('')}</div>`;
+      ${eq?'':own?`<button class="btn" data-eq="${it.id}">Use</button>`:afford?`<button class="btn primary" data-buy="${it.id}">Buy</button>`:`<span class="muted" style="font-size:13px">Need ${money(it.price-state.money)} more</span>`}</div></div>`;}).join('')}</div>`;
     d.querySelectorAll('[data-cat]').forEach(b=>b.onclick=()=>{shopCat=b.dataset.cat;renderDrawer();});
     d.querySelectorAll('[data-buy]').forEach(b=>b.onclick=()=>{const it=items.find(i=>i.id===b.dataset.buy);if(state.money<it.price)return;state.money-=it.price;state.owned[shopCat].push(it.id);equip(it.id);sfx('buy');toast('Bought '+it.name);});
     d.querySelectorAll('[data-eq]').forEach(b=>b.onclick=()=>equip(b.dataset.eq));
@@ -1300,7 +1383,7 @@ function renderDrawer(){
   }
 }
 function equip(id){state.gear[shopCat]=id;if(shopCat==='boat'){populate();}if(shopCat==='lure'&&mode==='water')endRetrieve();save();updateHeader();renderDrawer();}
-function goTo(id){if(mode==='fight'){toast('Land or lose this fish first.');return;}travel(id);renderDrawer();window.scrollTo({top:0,behavior:'smooth'});}
+function goTo(id){if(mode==='fight'){toast('Land or lose this fish first.');return;}closeMenu();travel(id);renderDrawer();}
 function drawThumb(c){
   const Lc=buildLoc(LOC[c.dataset.th]);if(!Lc.thumbClouds)Lc.thumbClouds=genClouds('partly',hashStr(Lc.id)+3);
   const x=c.getContext('2d');x.imageSmoothingEnabled=false;
