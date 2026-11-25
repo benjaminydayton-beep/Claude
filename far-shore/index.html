@@ -736,15 +736,16 @@ function tintLayer(x,env){
 }
 
 /* ============================== fish sprites ============================== */
-const SPR=new Map();
+const SPR=new Map(),FISH_FRAMES=6;
 function fishSprite(sp,len){
   len=Math.max(7,Math.round(len));const key=sp.id+':'+len;let S=SPR.get(key);if(S)return S;
   const lk=sp.look,fx=lk.fx||[],has=f=>fx.includes(f);
   const bodyH=Math.max(3,Math.round(len*lk.h)),half=bodyH/2,tailL=Math.max(2,Math.round(len*(lk.tail==='lunate'?.2:.16)));
   const ext=has('bill')?Math.round(len*.24):has('snoutL')?Math.round(len*.1):0;
   const finUp=has('sail')?Math.round(bodyH*.85):Math.max(1,Math.round(bodyH*.28));
-  const tSpread=lk.tail==='lunate'?1.35:lk.tail==='fork'?1.05:.85,extraT=Math.max(0,Math.ceil(half*tSpread-half))+1;
-  const padT=Math.max(finUp,extraT)+2,padB=Math.max(Math.round(bodyH*.3),extraT)+2;
+  const tSpread=lk.tail==='lunate'?(lk.h>.45?.75:1.35):lk.tail==='fork'?1.05:.85,extraT=Math.max(0,Math.ceil(half*tSpread-half))+1;
+  const amp=Math.max(1,Math.round(bodyH*.2));
+  const padT=Math.max(finUp,extraT+amp)+2,padB=Math.max(Math.round(bodyH*.3),extraT+amp)+2;
   const w=len+ext+3,h=bodyH+padT+padB,g=new Array(w*h).fill(null);
   const put=(x,y,c)=>{x=Math.round(x);y=Math.round(y);if(x>=0&&y>=0&&x<w&&y<h)g[y*w+x]=c;};
   const get=(x,y)=>(x>=0&&y>=0&&x<w&&y<h)?g[y*w+x]:null;
@@ -815,16 +816,23 @@ function fishSprite(sp,len){
   if(has('whisk')){put(b1+1,cy+1,[30,30,30]);put(b1+2,cy+2,[30,30,30]);put(b1,cy+2,[30,30,30]);put(b1,cy+3,[30,30,30]);}
   if(has('bill'))for(let i=1;i<=ext;i++)put(b1+i,cy-1,sh(back,-.15));
   if(has('snoutL'))for(let i=1;i<=ext;i++)put(b1+i,cy,side);
-  // outline
-  const oc=sh(back,-.6),out=g.slice();
-  for(let y=0;y<h;y++)for(let x=0;x<w;x++){if(g[y*w+x])continue;if(get(x-1,y)||get(x+1,y)||get(x,y-1)||get(x,y+1))out[y*w+x]=oc;}
-  const [r,rx]=mk(w,h),img=rx.createImageData(w,h);
-  for(let i=0;i<w*h;i++){const c=out[i];if(!c)continue;img.data[i*4]=c[0];img.data[i*4+1]=c[1];img.data[i*4+2]=c[2];img.data[i*4+3]=255;}
-  rx.putImageData(img,0,0);
+  // swim cycle: bend the rear of the body and the tail through a sine wave, one column at a time
+  const rearEnd=b0+Math.round((b1-b0)*.45),span=Math.max(1,rearEnd-ox);
+  const oc=sh(back,-.6);
   const flip=src=>{const [c,x]=mk(w,h);x.translate(w,0);x.scale(-1,1);x.drawImage(src,0,0);return c;};
   const silh=src=>{const [c,x]=mk(w,h);x.drawImage(src,0,0);x.globalCompositeOperation='source-in';x.fillStyle='rgba(6,14,22,.72)';x.fillRect(0,0,w,h);return c;};
-  const l=flip(r);
-  S={r,l,sr:silh(r),sl:silh(l),w,h,cy,noseOff:(b1+ext)-w/2};SPR.set(key,S);return S;
+  const rr=[],ll=[],sr=[],sl=[];
+  for(let k=0;k<FISH_FRAMES;k++){
+    const ph=Math.sin(k/FISH_FRAMES*Math.PI*2),fg=new Array(w*h).fill(null);
+    for(let x=0;x<w;x++){const dy=x<rearEnd?Math.round(ph*amp*Math.pow((rearEnd-x)/span,1.6)):0;
+      for(let y=0;y<h;y++){const c=g[y*w+x];if(!c)continue;const yy=y+dy;if(yy>=0&&yy<h)fg[yy*w+x]=c;}}
+    const fget=(x,y)=>(x>=0&&y>=0&&x<w&&y<h)?fg[y*w+x]:null,out=fg.slice();
+    for(let y=0;y<h;y++)for(let x=0;x<w;x++){if(fg[y*w+x])continue;if(fget(x-1,y)||fget(x+1,y)||fget(x,y-1)||fget(x,y+1))out[y*w+x]=oc;}
+    const [r,rx]=mk(w,h),img=rx.createImageData(w,h);
+    for(let i=0;i<w*h;i++){const c=out[i];if(!c)continue;img.data[i*4]=c[0];img.data[i*4+1]=c[1];img.data[i*4+2]=c[2];img.data[i*4+3]=255;}
+    rx.putImageData(img,0,0);const l=flip(r);rr.push(r);ll.push(l);sr.push(silh(r));sl.push(silh(l));
+  }
+  S={r:rr,l:ll,sr,sl,w,h,cy,noseOff:(b1+ext)-w/2};SPR.set(key,S);return S;
 }
 function dispLen(sp,w){return clamp(Math.round(2.2*Math.pow(sp.lenK*Math.cbrt(w),.72)),7,64);}
 
@@ -971,12 +979,17 @@ function drawBoatTo(c,env){
 
 /* ============================== drawing fish & lure ============================== */
 function drawFishAt(c,f,env){
-  const S=fishSprite(f.sp,f.len),known=!!state.journal[f.sp.id],right=f.dir>0;
-  const img=known?(right?S.r:S.l):(right?S.sr:S.sl);
+  const S=fishSprite(f.sp,f.len),known=!!state.journal[f.sp.id];
+  const tp=f.turn>0?f.turn/.28:0,dir=tp>.5?f.fromDir:f.dir,right=dir>0,fi=Math.floor(f.anim||0)%FISH_FRAMES;
+  const img=known?(right?S.r[fi]:S.l[fi]):(right?S.sr[fi]:S.sl[fi]);
   const depth=clamp((f.y-WY)/(H-WY),0,1);let a=clamp(.35+L.water.clar*.75-depth*(1-L.water.clar)*.9,.22,1);
   if(f.y<WY+2)a=1;
   c.globalAlpha=a;const wob=f.state==='hooked'?Math.round((R()-.5)*2):Math.round(Math.sin(T*3+f.ph)*.5);
-  c.drawImage(img,Math.round(f.x-S.w/2),Math.round(f.y-S.cy+wob));c.globalAlpha=1;
+  if(f.state==='hooked'&&fight&&fight.jump){const p=clamp(fight.jump.t/fight.jump.dur,0,1),ang=(p-.5)*1.5*f.dir;
+    c.save();c.translate(Math.round(f.x),Math.round(f.y));c.rotate(ang);c.drawImage(img,-Math.round(S.w/2),-S.cy);c.restore();}
+  else if(tp>0){const fac=Math.max(.15,Math.abs(2*tp-1)),ww=Math.max(2,Math.round(S.w*fac));c.drawImage(img,Math.round(f.x-ww/2),Math.round(f.y-S.cy+wob),ww,S.h);}
+  else c.drawImage(img,Math.round(f.x-S.w/2),Math.round(f.y-S.cy+wob));
+  c.globalAlpha=1;
 }
 function noseOf(f){const S=fishSprite(f.sp,f.len);return {x:f.x+(f.dir>0?S.noseOff:-S.noseOff),y:f.y};}
 function drawLure(c){
@@ -1048,6 +1061,9 @@ function lureWorking(lu){return lu.act==='any'||(lu.act==='move'?(lure.moving>0|
 function updateFish(dt,env){
   const g=gear(),lu=g.lure;tick+=dt;const doTick=tick>=.4;if(doTick)tick=0;
   for(let i=0;i<fish.length;i++){const f=fish[i];f.wary=Math.max(0,f.wary-dt);
+    if(f.pdir===undefined)f.pdir=f.dir;if(f.dir!==f.pdir){f.turn=.28;f.fromDir=f.pdir;f.pdir=f.dir;}f.turn=Math.max(0,(f.turn||0)-dt);
+    const wag=f.state==='swim'?.9+f.spd*.04:f.state==='chase'?2.2:f.state==='nibble'?1.4:f.state==='bite'?2.6:f.state==='flee'?3.2:f.state==='hooked'?(fight&&fight.jump?4:fight&&fight.run>0?3.4:2):1;
+    f.anim=((f.anim||0)+dt*wag*FISH_FRAMES)%(FISH_FRAMES*1000);
     if(f.state==='swim'){f.x+=f.dir*f.spd*dt;f.y+=(f.ty-f.y)*dt*.6;if(R()<dt*.15)f.ty=bandY(f.sp,f.x);if(R()<dt*.03)f.dir*=-1;
       if(f.x<-50||f.x>W+50){fish[i]=spawnFish(true);continue;}
       if(doTick&&mode==='water'&&!activeFish&&!f.wary&&f.sp.lures.includes(lu.id)){
@@ -1114,7 +1130,7 @@ function landFish(){
 }
 
 /* ============================== main loop ============================== */
-let pendingCatch=null,hudT=0,last=performance.now();
+let pendingCatch=null,hudT=0,last=performance.now(),cardAnim=null,halted=false;
 function update(dt){
   T+=dt;const env=envAt(L,state.hour,state.weather);
   if(mode!=='catch'&&!paused){const prev=state.hour;state.hour=(state.hour+dt*HPS)%24;weatherT+=dt;
@@ -1156,7 +1172,9 @@ function render(env){
     }
   });
 }
-function frame(now){const dt=Math.min(.05,(now-last)/1000);last=now;const env=update(dt);render(env);requestAnimationFrame(frame);}
+function frame(now){if(halted)return;const dt=Math.min(.05,(now-last)/1000);last=now;const env=update(dt);render(env);
+  if(cardAnim&&!$('catchModal').hidden){const A=cardAnim;A.t+=dt;const fi=Math.floor(A.t*FISH_FRAMES*2.4)%FISH_FRAMES,cx=A.cc.getContext('2d');cx.clearRect(0,0,A.cc.width,A.cc.height);cx.drawImage(A.S.r[fi],8,Math.round((A.cc.height-A.S.h)/2)+(Math.sin(A.t*9)>.6?-1:0));}
+  requestAnimationFrame(frame);}
 
 /* ============================== HUD ============================== */
 let toastTimer=0;
@@ -1207,7 +1225,7 @@ function showCatch(c){
   $('cV').textContent=money(c.val+c.bonus);
   $('cBadges').innerHTML=(c.isNew?'<span class="tag gold">New species</span>':'')+(c.pb?'<span class="tag ok">Personal best</span>':'')+(c.trophy?'<span class="tag gold">Trophy ×1.5</span>':'')+(c.bonus?`<span class="tag">Discovery bonus ${money(c.bonus)}</span>`:'');
   $('cNote').textContent=c.sp.fact;
-  const S=fishSprite(c.sp,56);cc.width=S.w+16;cc.height=Math.max(S.h+8,28);cx.imageSmoothingEnabled=false;cx.clearRect(0,0,cc.width,cc.height);cx.drawImage(S.r,8,Math.round((cc.height-S.h)/2));
+  const S=fishSprite(c.sp,56);cc.width=S.w+16;cc.height=Math.max(S.h+8,28);cx.imageSmoothingEnabled=false;cx.clearRect(0,0,cc.width,cc.height);cx.drawImage(S.r[0],8,Math.round((cc.height-S.h)/2));cardAnim={S,cc,t:0};
   $('cSell').textContent='Sell for '+money(c.val+c.bonus);$('cRelease').textContent=c.bonus?'Release (keep '+money(c.bonus)+' bonus)':'Release';
   m.hidden=false;$('cSell').focus();
 }
@@ -1253,7 +1271,7 @@ function renderDrawer(){
       :`<div class="spec"><span>Found at</span><b>${where}</b><span>Bites</span><b>${s.lures.slice(0,3).map(l=>LURE[l].name).join(', ')}</b><span>Active</span><b>${{day:'Daytime',night:'Night',low:'Dawn & dusk',any:'Any time'}[s.act]}</b><span>Depth</span><b>${s.d[0]<.3?'Shallow':s.d[0]<.6?'Mid-water':'Near bottom'}</b></div>`}</div>`;}).join('')}</div>`;
     d.querySelectorAll('[data-jf]').forEach(b=>b.onclick=()=>{jFilter=b.dataset.jf;renderDrawer();});
     d.querySelectorAll('canvas[data-sp]').forEach(c=>{const s=SP[c.dataset.sp],S=fishSprite(s,40),k=!!state.journal[s.id];c.width=72;c.height=24;const x=c.getContext('2d');x.imageSmoothingEnabled=false;
-      if(S.h>24){c.height=S.h+2;}x.drawImage(k?S.r:S.sr,Math.round((c.width-S.w)/2),Math.round((c.height-S.h)/2));});
+      if(S.h>24){c.height=S.h+2;}x.drawImage(k?S.r[0]:S.sr[0],Math.round((c.width-S.w)/2),Math.round((c.height-S.h)/2));});
   }else if(tab==='travel'){
     const tier=gear().boat.tier;
     d.innerHTML=`<div class="grid">${LOCS.map(Lc=>{const un=state.unlocked.includes(Lc.id),here=Lc.id===L.id,okBoat=tier>=Lc.tier,afford=state.money>=Lc.cost;
@@ -1299,6 +1317,7 @@ function start(data){
   requestAnimationFrame(t=>{last=t;requestAnimationFrame(frame);});
 }
 window.claude?.hot?.ready?window.claude.hot.ready(start):start(window.claude?.hot?.data??{});
-window.__farShore={get state(){return state;},travel:id=>{if(!state.unlocked.includes(id))state.unlocked.push(id);travel(id,true);},setHour:h=>{state.hour=h;},setWeather:w=>{state.weather=w;L.clouds=genClouds(w,5);},get mode(){return mode;},get fish(){return fish;}};
+window.__sp=SPECIES;window.__lures=LURE;
+window.__farShore={halt(){halted=true;},step(n,dt){for(let i=0;i<n;i++){update(dt);if(i%20===0)render(envAt(L,state.hour,state.weather));}},press,release,sell(){closeCatch(true);},get fight(){return fight;},get active(){return activeFish;},get lure(){return lure;},get power(){return power;},populate,get state(){return state;},travel:id=>{if(!state.unlocked.includes(id))state.unlocked.push(id);travel(id,true);},setHour:h=>{state.hour=h;},setWeather:w=>{state.weather=w;L.clouds=genClouds(w,5);},get mode(){return mode;},get fish(){return fish;}};
 })();
 </script>
