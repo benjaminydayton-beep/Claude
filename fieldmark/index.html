@@ -55,6 +55,7 @@ button:focus-visible, .g-item:focus-visible { outline: 2px solid var(--amber); o
   background: var(--chip); border: 1px solid var(--chip-line); border-radius: 3px; padding: 3px 8px;
   font-size: max(11px, calc(var(--u) * 5)); color: var(--cream);
 }
+.btns button.on { border-color: var(--amber); color: #ffe2a0; }
 .btns button:hover { background: rgba(40, 44, 58, 0.9); border-color: rgba(244,236,216,0.4); }
 kbd { font-family: var(--display); font-size: 0.85em; color: var(--amber); margin-left: 3px; }
 #hint {
@@ -198,6 +199,7 @@ kbd { font-family: var(--display); font-size: 0.85em; color: var(--amber); margi
         <div class="btns">
           <button id="b-guide" type="button">Field guide<kbd>G</kbd></button>
           <button id="b-map" type="button">Map<kbd>M</kbd></button>
+          <button id="b-ff" type="button">▶▶ 1×<kbd>X</kbd></button>
           <button id="b-sound" type="button" aria-pressed="true">Sound on</button>
           <button id="b-help" type="button" aria-label="Controls and help">Help<kbd>H</kbd></button>
         </div>
@@ -212,7 +214,7 @@ kbd { font-family: var(--display); font-size: 0.85em; color: var(--amber); margi
         <p id="pc-msg"></p>
       </div>
       <div id="touch" hidden>
-        <div class="grp"><button id="tc-left" type="button" aria-label="Walk left">◀</button><button id="tc-right" type="button" aria-label="Walk right">▶</button><button id="tc-rest" type="button">Rest</button></div>
+        <div class="grp"><button id="tc-left" type="button" aria-label="Walk left">◀</button><button id="tc-right" type="button" aria-label="Walk right">▶</button><button id="tc-crouch" type="button">Crouch</button><button id="tc-ff" type="button">▶▶ 1×</button></div>
         <div class="grp"><button id="tc-lamp" type="button">Lamp</button><button id="tc-cam" type="button">Camera</button><button id="tc-shoot" type="button" hidden>Shoot</button></div>
       </div>
     </div>
@@ -251,13 +253,14 @@ kbd { font-family: var(--display); font-size: 0.85em; color: var(--amber); margi
       <div>
         <h3>Controls</h3>
         <dl>
-          <dt>A / D · ← →</dt><dd>Walk</dd>
-          <dt>Hold Shift</dt><dd>Sneak: slow and quiet</dd>
+          <dt>A / D · ← →</dt><dd>Walk (also lowers the camera)</dd>
+          <dt>Hold Shift</dt><dd>Crouch and sneak: slow and quiet</dd>
           <dt>Space · right-click</dt><dd>Raise or lower the camera</dd>
-          <dt>Mouse · arrows</dt><dd>Aim the viewfinder</dd>
+          <dt>Mouse · I J K L</dt><dd>Aim the viewfinder</dd>
           <dt>Click · Enter</dt><dd>Take the photo</dd>
           <dt>F</dt><dd>Headlamp on/off</dd>
-          <dt>Hold T</dt><dd>Rest while time passes quickly</dd>
+          <dt>X · ▶▶ button</dt><dd>Fast-forward time: 1×, 4× or 12×</dd>
+          <dt>Hold T</dt><dd>Sit and rest while time passes quickly</dd>
           <dt>G · M · N</dt><dd>Field guide · map · sound</dd>
         </dl>
       </div>

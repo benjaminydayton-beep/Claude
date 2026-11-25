@@ -407,56 +407,152 @@ function silhouette(canvas, color) {
 }
 
 // ============ player sprite (field naturalist) ============
-const PCOL = {
-  hat: hex('#6f7d3c'), hatD: hex('#4d5a28'), band: hex('#8a5a2a'), skin: hex('#e9b98f'), skinD: hex('#c98f6a'), hair: hex('#5a3a22'),
-  shirt: hex('#ddd3bd'), vest: hex('#b9863a'), vestD: hex('#8a5f22'), pants: hex('#4c5c6c'), pantsD: hex('#36424e'),
-  boot: hex('#3d2b1f'), pack: hex('#8c4c2a'), packD: hex('#653418'), strap: hex('#2c2a28'), cam: hex('#2a2c30'), lens: hex('#5a7aa0'), lamp: hex('#f6e8a0')
+// Posed from a small skeleton (hip, shoulder, head, two-bone legs and arms) so walking,
+// crouching, aiming and sitting all share one consistent, shaded character.
+const PR = {
+  skin: ramp('#8e5a3e', '#b87c58', '#dca27a', '#f0c49a'),
+  hair: ramp('#2a1a12', '#432a1c', '#5c3c26'),
+  hat: ramp('#3a4220', '#545e2e', '#6f7a3c', '#8c9850'),
+  band: ramp('#4a2c16', '#6e4424'),
+  flannel: ramp('#4e1c18', '#7a2c24', '#a03c2e', '#c0563e'),
+  vest: ramp('#5a4224', '#806034', '#a48048', '#c4a062'),
+  pants: ramp('#33382a', '#4a5238', '#626c48', '#7c8658'),
+  boot: ramp('#1e1510', '#33241a', '#4c3626', '#664a34'),
+  pack: ramp('#4a2a18', '#6e3e22', '#8e542e', '#ae6c3c'),
+  roll: ramp('#2a3a2e', '#3e5644', '#56745a'),
+  metal: ramp('#16181c', '#26292e', '#3a3e46', '#5a606a'),
 };
-function makePlayerFrame(kind, phase) {
-  const pb = new PB(20, 30);
-  const R = (x, y, w, h, c) => pb.rect(x, y, w, h, c);
-  const crouch = kind === 'rest' ? 5 : 0;
-  const by = crouch; // vertical offset for body
-  // backpack
-  R(3, 11 + by, 3, 8, PCOL.pack); R(3, 17 + by, 3, 2, PCOL.packD); R(4, 10 + by, 2, 1, PCOL.packD);
-  // legs
-  if (kind === 'rest') {
-    R(6, 22, 6, 3, PCOL.pants); R(10, 22, 3, 5, PCOL.pantsD); R(6, 24, 6, 2, PCOL.pantsD);
-    R(11, 27, 4, 2, PCOL.boot); R(5, 26, 4, 3, PCOL.boot);
-  } else {
-    const sw = kind === 'walk' ? [0, 2, 0, -2][phase] : 0;
-    const lift = kind === 'walk' ? [0, 1, 0, 1][phase] : 0;
-    // back leg
-    R(7 - sw, 19, 2, 7 - (sw < 0 ? lift : 0), PCOL.pantsD); R(6 - sw, 26 - (sw < 0 ? lift : 0), 4, 2, PCOL.boot);
-    // front leg
-    R(9 + sw, 19, 2, 7 - (sw > 0 ? lift : 0), PCOL.pants); R(9 + sw, 26 - (sw > 0 ? lift : 0), 4, 2, PCOL.boot);
-  }
-  // torso
-  R(6, 11 + by, 6, 8, PCOL.shirt); R(6, 11 + by, 2, 8, PCOL.vest); R(10, 11 + by, 2, 8, PCOL.vest); R(6, 17 + by, 6, 2, PCOL.vestD);
-  R(8, 12 + by, 1, 5, PCOL.strap);
-  // head
-  R(7, 5 + by, 5, 6, PCOL.skin); R(7, 5 + by, 1, 6, PCOL.skinD); R(7, 5 + by, 2, 3, PCOL.hair);
-  R(10, 7 + by, 1, 1, [30, 22, 20]); // eye
-  R(12, 8 + by, 1, 1, PCOL.skinD); // nose
-  // hat with brim
-  R(7, 2 + by, 5, 3, PCOL.hat); R(5, 4 + by, 9, 1, PCOL.hatD); R(7, 4 + by, 5, 1, PCOL.band); R(8, 1 + by, 3, 1, PCOL.hat);
-  // arms & camera
-  if (kind === 'camera') {
-    R(10, 11 + by, 3, 2, PCOL.shirt); R(12, 9 + by, 2, 3, PCOL.skin);
-    R(11, 6 + by, 4, 3, PCOL.cam); R(15, 7 + by, 2, 1, PCOL.cam); R(16, 6 + by, 1, 3, PCOL.lens);
-  } else {
-    const aw = kind === 'walk' ? [0, -1, 0, 1][phase] : 0;
-    R(10 + aw, 12 + by, 2, 5, PCOL.shirt); R(10 + aw, 17 + by, 2, 1, PCOL.skin);
-    R(10 + aw, 16 + by, 2, 1, PCOL.cam); // camera hanging at the hip
-  }
-  outlinePB(pb, [20, 14, 18], 0.75);
-  return { c: pb.canvas(), ax: 9, ay: 28, w: pb.w, h: pb.h };
+const PW = 26, PH = 34, PGROUND = 32;
+function shadeCap(pb, x1, y1, x2, y2, w, rp, dim = 0, fn) {
+  const r = w / 2, vx = x2 - x1, vy = y2 - y1, l2 = vx * vx + vy * vy || 1e-6;
+  for (let py = Math.floor(Math.min(y1, y2) - r); py <= Math.ceil(Math.max(y1, y2) + r); py++)
+    for (let px = Math.floor(Math.min(x1, x2) - r); px <= Math.ceil(Math.max(x1, x2) + r); px++) {
+      const cx = px + 0.5, cy = py + 0.5;
+      const t = clamp(((cx - x1) * vx + (cy - y1) * vy) / l2, 0, 1);
+      const dx = cx - (x1 + vx * t), dy = cy - (y1 + vy * t), d = Math.hypot(dx, dy);
+      if (d > r) continue;
+      const nx = dx / r, ny = dy / r;
+      let b = 0.55 + 0.42 * (-0.6 * nx - 0.75 * ny) - dim;
+      let c = rp[clamp(Math.round(b * (rp.length - 1)), 0, rp.length - 1)];
+      if (fn) c = fn(px, py, t, c) || c;
+      pb.set(px, py, c);
+    }
+}
+function ik(ax, ay, bx, by, L1, L2, bend) {
+  let dx = bx - ax, dy = by - ay, d = Math.hypot(dx, dy);
+  const D = clamp(d, 0.01, L1 + L2 - 0.01);
+  const a = (L1 * L1 - L2 * L2 + D * D) / (2 * D), h = Math.sqrt(Math.max(0, L1 * L1 - a * a));
+  const ux = dx / (d || 1), uy = dy / (d || 1);
+  return [ax + ux * a + uy * h * bend, ay + uy * a - ux * h * bend];
+}
+const plaid = (px, py, t, c) => ((px % 3 === 0) || (py % 3 === 0) ? mix(c, [30, 10, 10], 0.35) : null);
+function makePlayerFrame(kind, ph = 0) {
+  const pb = new PB(PW, PH);
+  const crouch = kind === 'crouch' || kind === 'crouchwalk' || kind === 'camcrouch';
+  const walking = kind === 'walk' || kind === 'crouchwalk';
+  const sit = kind === 'rest';
+  const cyc = ph * TAU;
+  const bob = walking ? Math.abs(Math.sin(cyc)) * (crouch ? 0.5 : 1) : 0;
+  // skeleton (facing right)
+  let hip = [11.5, (crouch ? 24 : 18.6) - bob], sh = [12.4, (crouch ? 16.5 : 10.4) - bob];
+  if (crouch) sh = [14.5, 16.6 - bob];
+  if (sit) { hip = [10.5, 28.5]; sh = [11.5, 19.5]; }
+  const head = [sh[0] + (crouch ? 2.2 : 0.8), sh[1] - 4.2];
+  const thigh = 7, shin = 6.8;
+  let feet;
+  if (sit) feet = [[17, 31.5], [18.5, 31.5]];
+  else if (walking) {
+    const stride = crouch ? 3.2 : 4.6, s1 = Math.sin(cyc), c1 = Math.cos(cyc);
+    feet = [[hip[0] - s1 * stride, PGROUND - Math.max(0, c1) * (crouch ? 1.2 : 2)], [hip[0] + s1 * stride, PGROUND - Math.max(0, -c1) * (crouch ? 1.2 : 2)]];
+  } else feet = crouch ? [[hip[0] - 3, PGROUND], [hip[0] + 3.5, PGROUND]] : [[hip[0] - 1.6, PGROUND], [hip[0] + 1.8, PGROUND]];
+  const legs = feet.map(f => ({ f, k: ik(hip[0], hip[1], f[0], f[1] - 1, thigh, shin, 1) }));
+  // arms
+  const shBack = [sh[0] - 1, sh[1] + 1], shFront = [sh[0] + 0.5, sh[1] + 1];
+  let hands;
+  if (kind === 'camera' || kind === 'camcrouch') hands = [[head[0] + 3.2, head[1] + 1.2], [head[0] + 3.6, head[1] + 1.6]];
+  else if (sit) hands = [[16, 24.5], [17, 25]];
+  else if (walking) { const sw = Math.sin(cyc) * (crouch ? 1.5 : 3); hands = [[sh[0] + sw, sh[1] + 9.2], [sh[0] - sw + 0.5, sh[1] + 9.2]]; }
+  else if (crouch) hands = [[sh[0] + 2.5, sh[1] + 8], [sh[0] + 3.5, sh[1] + 7.5]];
+  else hands = [[sh[0] - 0.3, sh[1] + 9.4], [sh[0] + 1.2, sh[1] + 9.4]];
+  const arm = (s0, hnd) => ({ s: s0, h: hnd, e: ik(s0[0], s0[1], hnd[0], hnd[1], 4.6, 4.6, -1) });
+  const aBack = arm(shBack, hands[0]), aFront = arm(shFront, hands[1]);
+  const back = walking ? (Math.sin(cyc) > 0 ? 1 : 0) : 0; // which leg is behind
+  const drawLeg = (L, dim) => {
+    shadeCap(pb, hip[0], hip[1], L.k[0], L.k[1], 3.6, PR.pants, dim);
+    shadeCap(pb, L.k[0], L.k[1], L.f[0], L.f[1] - 1.2, 3.1, PR.pants, dim);
+    // boot: shaft, foot and sole
+    const fx = Math.round(L.f[0]), fy = Math.round(L.f[1]);
+    shadeCap(pb, L.f[0] - 0.2, L.f[1] - 2.6, L.f[0] + 0.2, L.f[1] - 1, 3.2, PR.boot, dim);
+    pb.rect(fx - 1, fy - 2, 4, 2, (px, py) => pick(PR.boot, (py === fy - 2 ? 0.8 : 0.45) - dim, px, py));
+    pb.rect(fx - 1, fy, 4, 1, mix(PR.boot[0], [0, 0, 0], 0.3));
+    pb.set(fx, fy - 3, PR.band[1]);
+  };
+  const drawArm = (A, dim) => {
+    shadeCap(pb, A.s[0], A.s[1], A.e[0], A.e[1], 2.8, PR.flannel, dim, plaid);
+    shadeCap(pb, A.e[0], A.e[1], A.h[0], A.h[1], 2.5, PR.flannel, dim, plaid);
+    shadeCap(pb, A.h[0], A.h[1], A.h[0] + 0.4, A.h[1] + 0.3, 2.2, PR.skin, dim);
+  };
+  // --- back to front ---
+  drawArm(aBack, 0.22);
+  drawLeg(legs[back], 0.18);
+  // backpack with bedroll
+  const lean = (sh[0] - hip[0]) / (hip[1] - sh[1]);
+  const px0 = sh[0] - 5.4, py0 = sh[1] + 0.2;
+  pb.poly([[px0, py0 + 1], [px0 + 3.8, py0], [px0 + 3.8 - lean * 6, py0 + 7.2], [px0 - lean * 6 - 0.2, py0 + 7.6]], (x, y, u, v) => pick(PR.pack, 0.85 - u * 0.5 - v * 0.25, x, y));
+  pb.rect(Math.round(px0 - lean * 4), Math.round(py0 + 5), 4, 1, PR.pack[0]);
+  shadeCap(pb, px0 + 0.2, py0 - 0.4, px0 + 3.8, py0 - 0.4, 2.2, PR.roll);
+  // torso: flannel shirt under a field vest
+  const tw = 3.2;
+  const torso = [[sh[0] - tw, sh[1]], [sh[0] + tw - 0.6, sh[1]], [hip[0] + tw - 0.4, hip[1] + 0.8], [hip[0] - tw + 0.2, hip[1] + 0.8]];
+  pb.poly(torso, (x, y, u) => { const c = pick(PR.flannel, 0.8 - u * 0.6, x, y); return plaid(x, y, 0, c) || c; });
+  const vest = [[sh[0] - tw, sh[1] + 0.5], [sh[0] + 0.6, sh[1] + 0.5], [hip[0] + 1.2, hip[1]], [hip[0] - tw + 0.2, hip[1]]];
+  pb.poly(vest, (x, y, u, v) => pick(PR.vest, 0.85 - u * 0.55 + (v > 0.55 && v < 0.62 ? -0.4 : 0), x, y));
+  const vx2 = [[sh[0] + 2.0, sh[1] + 0.6], [sh[0] + tw - 0.6, sh[1] + 0.6], [hip[0] + tw - 0.4, hip[1]], [hip[0] + 2.6, hip[1]]];
+  pb.poly(vx2, (x, y, u) => pick(PR.vest, 0.45 - u * 0.3, x, y));
+  // belt
+  pb.line(hip[0] - tw + 0.4, hip[1] + 0.3, hip[0] + tw - 0.6, hip[1] + 0.3, 1, PR.band[0]);
+  pb.set(Math.round(hip[0] + 1), Math.round(hip[1] + 0.3), hex('#c8a040'));
+  // binoculars on a neck strap
+  pb.line(sh[0] + 0.5, sh[1], sh[0] + 2.2, sh[1] + 4, 1, PR.metal[1]);
+  pb.rect(Math.round(sh[0] + 1.8), Math.round(sh[1] + 4), 2, 3, (x, y) => pick(PR.metal, y === Math.round(sh[1] + 4) ? 0.9 : 0.4, x, y));
+  drawLeg(legs[1 - back], 0);
+  // neck and head
+  shadeCap(pb, sh[0] + 0.5, sh[1] + 0.5, head[0], head[1] + 2, 2.2, PR.skin);
+  const hx = head[0], hy = head[1];
+  pb.ellipse(hx, hy, 2.9, 3.2, (x, y, nx, ny) => pick(PR.skin, 0.62 - nx * 0.25 - ny * 0.3, x, y));
+  pb.ellipse(hx - 1.6, hy - 0.4, 1.7, 2.6, (x, y) => pick(PR.hair, 0.5, x, y)); // hair at the back
+  pb.set(Math.round(hx - 0.6), Math.round(hy + 0.2), PR.skin[1]); pb.set(Math.round(hx - 0.6), Math.round(hy + 1.2), PR.skin[1]); // ear
+  pb.set(Math.round(hx + 1.6), Math.round(hy - 0.2), hex('#1c1210')); // eye
+  pb.set(Math.round(hx + 1.6), Math.round(hy - 1.2), PR.hair[1]); // brow
+  pb.set(Math.round(hx + 2.9), Math.round(hy + 0.6), PR.skin[1]); // nose
+  pb.rect(Math.round(hx + 0.4), Math.round(hy + 2), 2, 1, mix(PR.skin[1], PR.hair[1], 0.5)); // stubble
+  // bush hat: crown, band and wide brim
+  const hy0 = Math.round(hy - 2.2);
+  pb.ellipse(hx - 0.2, hy0 - 1.4, 2.8, 2.0, (x, y, nx, ny) => (ny > 0.15 ? null : pick(PR.hat, 0.7 - nx * 0.3 - ny * 0.4, x, y)));
+  pb.rect(Math.round(hx - 2.8), hy0 - 1, 6, 1, (x, y) => pick(PR.band, 0.5, x, y));
+  pb.rect(Math.round(hx - 4.4), hy0, 10, 1, (x, y) => pick(PR.hat, x < hx ? 0.5 : 0.3, x, y));
+  pb.set(Math.round(hx + 5.6), hy0 + 1, PR.hat[1]); pb.set(Math.round(hx - 4.6), hy0 + 1, PR.hat[0]);
+  const lamp = [Math.round(hx + 2.5) - 12, hy0 - 1 - PGROUND]; // headlamp on the hat band, relative to the feet
+  pb.set(Math.round(hx + 2.5), hy0 - 1, hex('#d8d0b0'));
+  // front arm and camera
+  if (kind === 'camera' || kind === 'camcrouch') {
+    drawArm(aFront, 0);
+    const cx0 = Math.round(head[0] + 2), cy0 = Math.round(head[1] - 0.6);
+    pb.rect(cx0, cy0, 4, 3, (x, y) => pick(PR.metal, y === cy0 ? 0.85 : 0.4, x, y));
+    pb.rect(cx0 + 4, cy0 + 0.5, 2, 2, (x, y) => pick(PR.metal, 0.6, x, y));
+    pb.set(cx0 + 6, cy0 + 1, hex('#7aa0c8')); pb.set(cx0 + 1, cy0 - 1, PR.metal[2]);
+  } else drawArm(aFront, 0);
+  outlinePB(pb, [18, 12, 16], 0.78);
+  return { c: pb.canvas(), ax: 12, ay: PGROUND, w: pb.w, h: pb.h, lamp };
 }
 function buildPlayerSprites() {
   return {
-    idle: makePlayerFrame('idle', 0),
-    walk: [0, 1, 2, 3].map(i => makePlayerFrame('walk', i)),
-    camera: makePlayerFrame('camera', 0),
-    rest: makePlayerFrame('rest', 0),
+    idle: makePlayerFrame('idle'),
+    walk: [0, 1, 2, 3, 4, 5].map(i => makePlayerFrame('walk', i / 6)),
+    crouch: makePlayerFrame('crouch'),
+    crouchWalk: [0, 1, 2, 3].map(i => makePlayerFrame('crouchwalk', i / 4)),
+    camera: makePlayerFrame('camera'),
+    cameraCrouch: makePlayerFrame('camcrouch'),
+    rest: makePlayerFrame('rest'),
   };
 }

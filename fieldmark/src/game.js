@@ -3,6 +3,7 @@
 const SAVE_KEY = 'fieldmark-save-v1';
 const HOUR_SECONDS = 20;            // real seconds per in-game hour (a full day is 8 minutes)
 const REST_SPEED = 12;              // time multiplier while resting
+const FF_SPEEDS = [1, 4, 12];       // fast-forward settings for the clock
 const VF = { w: 150, h: 96 };       // viewfinder size in game pixels (2x magnification)
 const TOTAL = SPECIES.length;
 
@@ -16,7 +17,7 @@ const G = {
   focus: 0, focusTarget: null,
   spawnT: 1, rain: 0, E: null, lampOn: 0,
   activeLights: [], lampCone: null, beam: null,
-  flash: 0, shotCd: 0, keys: {}, tkeys: {}, ambT: 0, hintT: 40,
+  flash: 0, shotCd: 0, ff: 0, keys: {}, tkeys: {}, ambT: 0, hintT: 40,
   photoCardT: 0, mouseIn: false,
 };
 const SPR = {};
@@ -295,7 +296,7 @@ function computeLights(E) {
   G.activeLights = L;
   const P = G.player;
   if (P && P.lamp && G.state === 'play') {
-    const hx = P.x + P.face * 3, hy = P.y - 21;
+    const lp = playerSprite(P).lamp, hx = P.x + P.face * lp[0], hy = P.y + lp[1];
     let a = P.face > 0 ? 0.18 : Math.PI - 0.18;
     if (P.mode === 'camera') a = Math.atan2(G.aim.y - hy, G.camX + G.aim.x - hx);
     G.lampCone = { x: hx, y: hy, r: 230, a, half: 0.4 };
@@ -321,7 +322,15 @@ function enterHabitat(id, keepX) {
 }
 
 // ---------------- input ----------------
-const KEYMAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', ArrowUp: 'up', KeyW: 'up', ArrowDown: 'down', KeyS: 'down', ShiftLeft: 'sneak', ShiftRight: 'sneak', KeyT: 'rest' };
+// Walking keys always walk (they lower the camera); the viewfinder is aimed with the mouse or I/J/K/L.
+const KEYMAP = { ArrowLeft: 'left', KeyA: 'left', ArrowRight: 'right', KeyD: 'right', KeyI: 'aimU', ArrowUp: 'aimU', KeyW: 'aimU', KeyK: 'aimD', ArrowDown: 'aimD', KeyS: 'aimD', KeyJ: 'aimL', KeyL: 'aimR', ShiftLeft: 'sneak', ShiftRight: 'sneak', KeyT: 'rest' };
+function playerSprite(P) {
+  if (P.mode === 'camera') return P.sneak ? PSPR.cameraCrouch : PSPR.camera;
+  if (P.mode === 'rest') return PSPR.rest;
+  if (P.moving) return P.sneak ? PSPR.crouchWalk[Math.floor(P.walkT) % 4] : PSPR.walk[Math.floor(P.walkT) % 6];
+  return P.sneak ? PSPR.crouch : PSPR.idle;
+}
+function cycleFF() { G.ff = (G.ff + 1) % FF_SPEEDS.length; Sound.blip(600 + G.ff * 300, 0.05, 0.1); UI.ffLabel(); }
 function down(k) { return G.keys[k] || G.tkeys[k]; }
 function toggleCamera(force) {
   const P = G.player;
@@ -347,6 +356,7 @@ function onKeyDown(e) {
     case 'KeyM': UI.toggle('map'); break;
     case 'KeyH': UI.toggle('help'); break;
     case 'KeyN': UI.toggleSound(); break;
+    case 'KeyX': if (!G.overlay) cycleFF(); break;
     case 'Escape': if (G.overlay) UI.close(); else if (G.player.mode === 'camera') toggleCamera(false); else UI.toggle('help'); break;
   }
 }
@@ -366,25 +376,26 @@ function update(dt) {
   if (G.overlay) return;
   const P = G.player, hab = G.hab;
   const resting = down('rest') && P.mode !== 'camera';
-  const ts = resting ? REST_SPEED : 1;
+  const ts = Math.max(resting ? REST_SPEED : 1, FF_SPEEDS[G.ff]);
   G.hour += dt * ts / HOUR_SECONDS;
   if (G.hour >= 24) { G.hour -= 24; G.day++; }
   if (hab.rain) { const target = Math.sin(G.day * 1.7 + G.hour * 0.55) > 0.25 ? 1 : 0; G.rain += (target - G.rain) * Math.min(1, dt * 0.25 * ts); } else G.rain = 0;
   // player
+  P.sneak = !!down('sneak');
+  if (P.mode === 'camera' && (down('left') || down('right'))) toggleCamera(false);
   if (P.mode === 'camera') {
-    const ax = (down('right') ? 1 : 0) - (down('left') ? 1 : 0), ay = (down('down') ? 1 : 0) - (down('up') ? 1 : 0);
+    const ax = (down('aimR') ? 1 : 0) - (down('aimL') ? 1 : 0), ay = (down('aimD') ? 1 : 0) - (down('aimU') ? 1 : 0);
     G.aim.x = clamp(G.aim.x + ax * 110 * dt, 0, W); G.aim.y = clamp(G.aim.y + ay * 110 * dt, 0, H);
     P.moving = false;
   } else {
     P.mode = resting ? 'rest' : 'walk';
     const dir = resting ? 0 : (down('right') ? 1 : 0) - (down('left') ? 1 : 0);
-    P.sneak = !!down('sneak');
     const sp = P.sneak ? 20 : 52;
     const nx = clamp(P.x + dir * sp * dt, hab.minX, hab.maxX);
     P.moving = dir !== 0 && nx !== P.x;
     if (dir) P.face = dir;
     P.x = nx; P.y = hab.walkY(P.x);
-    if (P.moving) P.walkT += dt * (P.sneak ? 5 : 9);
+    if (P.moving) P.walkT += dt * (P.sneak ? 6 : 11);
   }
   const target = P.mode === 'camera' ? G.camX : clamp(P.x - W / 2 + P.face * 30, 0, WORLD_W - W);
   G.camX += (target - G.camX) * Math.min(1, dt * 3);
@@ -575,9 +586,9 @@ function draw() {
   ents.sort((a, b) => a.y - b.y);
   for (const e of ents) {
     if (e.p) {
-      const spr = P.mode === 'camera' ? PSPR.camera : P.mode === 'rest' ? PSPR.rest : P.moving ? PSPR.walk[Math.floor(P.walkT) % 4] : PSPR.idle;
+      const spr = playerSprite(P);
       drawSprite(w, spr, P.x - camX, P.y, P.face);
-      if (P.lamp) { w.fillStyle = '#f6e8a0'; w.fillRect(Math.round(P.x - camX + P.face * 3), Math.round(P.y - 25 + (P.mode === 'rest' ? 5 : 0)), 1, 1); }
+      if (P.lamp) { w.fillStyle = '#fff4c0'; w.fillRect(Math.round(P.x - camX + P.face * spr.lamp[0]), Math.round(P.y + spr.lamp[1]), 1, 1); }
     } else {
       const b = e.b;
       drawSprite(w, b.sprite(), b.x - camX, b.y, b.face, b.state === 'wade' ? b.y - 4 : undefined);
@@ -764,6 +775,8 @@ const UI = {
     $('b-map').onclick = () => this.toggle('map');
     $('b-help').onclick = () => this.toggle('help');
     $('b-sound').onclick = () => this.toggleSound();
+    $('b-ff').onclick = () => cycleFF();
+    this.ffLabel();
     document.querySelectorAll('[data-close]').forEach(b => { b.onclick = () => this.close(); });
     $('t-start').onclick = () => this.start();
     $('t-new').onclick = () => { $('t-confirm').hidden = false; };
@@ -820,6 +833,14 @@ const UI = {
     G.overlay = null; G.keys = {};
     if (!silent) Sound.blip(520, 0.05, 0.08);
   },
+  ffLabel() {
+    const b = $('b-ff'), sp = FF_SPEEDS[G.ff];
+    b.innerHTML = `▶▶ ${sp}×<kbd>X</kbd>`;
+    b.setAttribute('aria-label', `Time speed ${sp}×. Click to change.`);
+    b.classList.toggle('on', G.ff > 0);
+    const t = $('tc-ff'); if (t) t.textContent = `▶▶ ${sp}×`;
+    this.updateHud();
+  },
   toggleSound() { Sound.init(); Sound.setMuted(!Sound.muted); this.sound(); save(); },
   sound() { $('b-sound').textContent = Sound.muted ? 'Sound off' : 'Sound on'; $('b-sound').setAttribute('aria-pressed', String(!Sound.muted)); },
   tick(dt) { this.hudT -= dt; if (this.hudT <= 0) { this.updateHud(); this.hudT = 0.25; } },
@@ -827,15 +848,15 @@ const UI = {
     if (!G.hab) return;
     $('hab-name').textContent = G.hab.name;
     const ph = phaseOf(G.hour);
-    $('clock').textContent = `Day ${G.day} · ${fmtTime(G.hour)} · ${PHASE_LABEL[ph]}`;
+    $('clock').textContent = `Day ${G.day} · ${fmtTime(G.hour)} · ${PHASE_LABEL[ph]}${G.ff ? ` · ${FF_SPEEDS[G.ff]}× speed` : ''}`;
     $('clock').dataset.phase = ph;
     const habFound = SPECIES.filter(s => s.hab === G.habId && G.found[s.id]).length;
     $('count').innerHTML = `<strong>${foundCount()}</strong> / ${TOTAL} species <span>· ${habFound} / 6 here</span>`;
     const P = G.player;
     let hint = '';
     if (P) {
-      if (P.mode === 'camera') hint = G.touch ? 'Drag to aim · tap Shoot' : 'Hold steady on a bird until the ring turns green, then click (or Enter) · Space to lower';
-      else if (G.hintT > 0) hint = 'A/D or ←/→ walk · hold Shift to sneak · Space camera · F headlamp · hold T to rest · G field guide · M map';
+      if (P.mode === 'camera') hint = G.touch ? 'Drag to aim · tap Shoot' : 'Hold steady until the ring turns green, then click or Enter · A/D walk away · Space lowers the camera';
+      else if (G.hintT > 0) hint = 'A/D walk · hold Shift to crouch and sneak · Space camera · F headlamp · X fast-forward · G field guide · M map';
       else if (!SPECIES.some(sp => sp.hab === G.habId && speciesActive(sp))) hint = `No birds here are active at ${PHASE_LABEL[phaseOf(G.hour)].toLowerCase()}. Hold T to rest until they return, or open the map (M).`;
       else if (G.E && G.E.night > 0.6 && !P.lamp) hint = 'It\'s dark. Press F for your headlamp. Owls don\'t mind it, but other birds do.';
     }
@@ -974,9 +995,11 @@ const UI = {
       const off = e => { e.preventDefault(); G.tkeys[key] = false; };
       el.addEventListener('pointerdown', on); el.addEventListener('pointerup', off); el.addEventListener('pointerleave', off); el.addEventListener('pointercancel', off);
     };
-    hold('tc-left', 'left'); hold('tc-right', 'right'); hold('tc-rest', 'rest');
+    hold('tc-left', 'left'); hold('tc-right', 'right');
     $('tc-cam').onclick = () => toggleCamera();
     $('tc-lamp').onclick = () => { if (G.player) G.player.lamp = !G.player.lamp; };
+    $('tc-ff').onclick = () => cycleFF();
+    hold('tc-crouch', 'sneak');
     $('tc-shoot').onclick = () => shoot();
     this.touchMode();
   },
