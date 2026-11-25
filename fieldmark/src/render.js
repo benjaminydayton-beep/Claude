@@ -22,6 +22,16 @@ class Renderer {
     this.canvas = canvas;
     this.ctx = canvas.getContext('2d');
     this.ctx.imageSmoothingEnabled = false;
+    const r = rng(99);
+    this.stars = Array.from({ length: 300 }, () => ({ x: Math.floor(r() * W_MAX), y: Math.floor(r() * 175), b: 0.3 + r() * 0.7, p: r() * TAU }));
+    this.clouds = this.makeClouds();
+    this.resize(W);
+  }
+  // (re)build every screen-sized buffer for a new view width
+  resize(w) {
+    W = w;
+    this.canvas.width = W; this.canvas.height = H;
+    this.ctx.imageSmoothingEnabled = false;
     const mk = () => { const c = makeCanvas(W, H); const x = c.getContext('2d'); x.imageSmoothingEnabled = false; return [c, x]; };
     [this.sky, this.skyCtx] = mk();
     [this.world, this.wctx] = mk();
@@ -29,12 +39,10 @@ class Renderer {
     [this.light, this.lctx] = mk();
     [this.tmp, this.tctx] = mk();
     [this.snap, this.sctx] = mk();
+    [this.snap2, this.snap2c] = mk();
     this.skyImg = this.skyCtx.createImageData(W, H);
-    const r = rng(99);
-    this.stars = Array.from({ length: 150 }, () => ({ x: Math.floor(r() * W), y: Math.floor(r() * 175), b: 0.3 + r() * 0.7, p: r() * TAU }));
-    this.clouds = this.makeClouds();
     this.vignette = this.makeVignette();
-    this.blurC = makeCanvas(W / 4, H / 4);
+    this.blurC = makeCanvas(Math.ceil(W / 4), Math.ceil(H / 4));
   }
   makeClouds() {
     const out = [];
@@ -49,7 +57,7 @@ class Renderer {
         for (const b of blobs) { const q = 1 - ((x - b.x) ** 2 + (y - b.y) ** 2) / (b.r * b.r); if (q > best) { best = q; by = (y - b.y) / b.r; } }
         if (best > 0 && y < 15) pb.set(x, y, pick(cr, 0.75 - by * 0.5 - (y > 12 ? 0.4 : 0), x, y));
       }
-      out.push({ c: pb.canvas(), x: r() * 900, y: 18 + r() * 70, s: 0.5 + r() * 0.8, par: 0.04 + r() * 0.05 });
+      out.push({ c: pb.canvas(), x: r() * (W_MAX + 400), y: 18 + r() * 70, s: 0.5 + r() * 0.8, par: 0.04 + r() * 0.05 });
     }
     return out;
   }
@@ -91,6 +99,7 @@ class Renderer {
     if (E.night > 0.05) {
       const k = E.night * (hab.clearNight ? 1.2 : 1);
       for (const s of this.stars) {
+        if (s.x >= W) continue;
         const tw = 0.6 + 0.4 * Math.sin(t * 2 + s.p);
         const a = clamp(s.b * tw * k, 0, 1), i = (s.y * W + s.x) << 2;
         d[i] = lerp(d[i], 255, a); d[i + 1] = lerp(d[i + 1], 250, a); d[i + 2] = lerp(d[i + 2], 235, a);
@@ -101,7 +110,7 @@ class Renderer {
     // sun & moon
     const h = E.hour;
     if (h > 5.2 && h < 19.8) {
-      const u = (h - 5.2) / 14.6, sx = 30 + u * 420, sy = 205 - Math.sin(u * Math.PI) * 175;
+      const u = (h - 5.2) / 14.6, sx = 30 + u * (W - 60), sy = 205 - Math.sin(u * Math.PI) * 175;
       const low = 1 - Math.sin(u * Math.PI);
       const scol = mix([255, 250, 225], [255, 150, 70], low * low);
       sc.globalCompositeOperation = 'lighter';
@@ -113,7 +122,7 @@ class Renderer {
       this.sun = { x: sx, y: sy, col: scol };
     } else this.sun = null;
     if (h > 18.5 || h < 6.5) {
-      const u = ((h - 18.5 + 24) % 24) / 12, mx = 40 + u * 400, my = 200 - Math.sin(u * Math.PI) * 160;
+      const u = ((h - 18.5 + 24) % 24) / 12, mx = 40 + u * (W - 80), my = 200 - Math.sin(u * Math.PI) * 160;
       sc.globalCompositeOperation = 'lighter';
       const g = sc.createRadialGradient(mx, my, 2, mx, my, 34);
       g.addColorStop(0, 'rgba(200,210,255,0.25)'); g.addColorStop(1, 'rgba(200,210,255,0)');
@@ -137,7 +146,7 @@ class Renderer {
     }
     // clouds
     for (const c of this.clouds) {
-      const x = ((c.x + t * 3 * c.s - this.camX * c.par) % 900 + 900) % 900 - 160;
+      const span = W_MAX + 400, x = ((c.x + t * 3 * c.s - this.camX * c.par) % span + span) % span - 160;
       this.tintDraw(sc, c.c, 0, 0, c.c.width, c.c.height, x, c.y, mix(E.amb, [E.hor[0] / 255, E.hor[1] / 255, E.hor[2] / 255], 0.35), null, 0, 0.92);
     }
   }

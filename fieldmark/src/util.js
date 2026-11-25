@@ -1,6 +1,8 @@
 'use strict';
 // ---------- core constants & math ----------
-const W = 480, H = 270;
+// The view is always 270 game pixels tall; its width follows the screen's shape (see UI.fit).
+const H = 270, W_MIN = 300, W_MAX = 960;
+let W = 480;
 const TAU = Math.PI * 2;
 const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 const lerp = (a, b, t) => a + (b - a) * t;

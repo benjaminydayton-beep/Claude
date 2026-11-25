@@ -4,7 +4,8 @@
 // pixel buffers, and records perches, light sources and water surfaces as it goes.
 const WORLD_W = 1600;
 const PAR = { far: 0.15, mid: 0.45, fore: 1.22 };
-const layerW = f => Math.ceil(W + (WORLD_W - W) * f) + 2;
+// wide enough for any view width between W_MIN and W_MAX
+const layerW = f => Math.ceil(Math.max(W_MAX + (WORLD_W - W_MAX) * f, W_MIN + (WORLD_W - W_MIN) * f)) + 2;
 
 // ---------- distant scenery ----------
 function paintRidge(pb, o) {

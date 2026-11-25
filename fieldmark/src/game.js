@@ -366,7 +366,7 @@ function onKeyUp(e) { const k = KEYMAP[e.code]; if (k) G.keys[k] = false; }
 function update(dt) {
   G.t += dt;
   if (G.state === 'title') {
-    G.camX = 380 + Math.sin(G.t * 0.05) * 300;
+    G.camX = clamp(380 + Math.sin(G.t * 0.05) * 300, 0, WORLD_W - W);
     for (const b of G.birds) b.update(dt);
     G.birds = G.birds.filter(b => !b.dead);
     G.spawnT -= dt; if (G.spawnT <= 0) { if (G.birds.length < 5) trySpawn(false); G.spawnT = 3; }
@@ -650,8 +650,8 @@ function draw() {
   if ((hab.id === 'forest' || hab.id === 'rainforest') && E.day > 0.05 && G.rain < 0.5) {
     ctx.globalCompositeOperation = 'lighter';
     const warm = mix([255, 240, 200], [255, 190, 120], 1 - E.day);
-    for (let i = 0; i < 6; i++) {
-      const sx = ((i * 197 + 60 - camX * 0.9) % 760 + 760) % 760 - 140;
+    for (let i = 0; i < Math.ceil(W / 80); i++) {
+      const span = W + 280, sx = ((i * 197 + 60 - camX * 0.9) % span + span) % span - 140;
       const a = (0.035 + 0.02 * Math.sin(t * 0.4 + i)) * E.day * (1 - G.rain);
       const g = ctx.createLinearGradient(0, 0, 0, 210);
       g.addColorStop(0, rgba(warm, a)); g.addColorStop(1, rgba(warm, 0));
@@ -796,8 +796,17 @@ const UI = {
     const wrap = $('app'), cs = getComputedStyle(wrap);
     const aw = wrap.clientWidth - parseFloat(cs.paddingLeft) - parseFloat(cs.paddingRight);
     const ah = wrap.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
-    let s = Math.min(aw / W, ah / H);
-    if (s >= 2 && Math.floor(s) / s > 0.86) s = Math.floor(s);
+    // Fill the screen: the scene keeps its 270-pixel height and the view widens or narrows
+    // to match the screen's shape. Very tall (portrait) or ultra-wide screens get thin bars.
+    let s = ah / H;
+    if (s >= 2 && Math.floor(s) / s > 0.9) s = Math.floor(s);
+    let w = clamp(Math.floor(aw / s), W_MIN, W_MAX);
+    if (w * s > aw) s = aw / w;
+    if (R && w !== W) {
+      R.resize(w);
+      G.camX = clamp(G.camX, 0, WORLD_W - W);
+      G.aim.x = clamp(G.aim.x, 0, W);
+    }
     this.stage.style.width = Math.floor(W * s) + 'px'; this.stage.style.height = Math.floor(H * s) + 'px';
     document.documentElement.style.setProperty('--u', s + 'px');
   },
@@ -963,8 +972,8 @@ const UI = {
     x.fillStyle = g; x.fillRect(0, 0, 160, 90);
     const hab = HAB_CACHE[id];
     if (hab) {
-      const sx = clamp(hab.spawnX - W / 2, 0, WORLD_W - W);
-      for (const [k, f] of [['far', PAR.far], ['mid', PAR.mid], ['near', 1]]) x.drawImage(hab.layers[k], Math.round(sx * f), 0, W, H, 0, 0, 160, 90);
+      const sx = clamp(hab.spawnX - 240, 0, WORLD_W - 480);
+      for (const [k, f] of [['far', PAR.far], ['mid', PAR.mid], ['near', 1]]) x.drawImage(hab.layers[k], Math.round(sx * f), 0, 480, H, 0, 0, 160, 90);
     }
     if (!open) { x.fillStyle = 'rgba(30,26,20,0.65)'; x.fillRect(0, 0, 160, 90); }
   },
@@ -1029,7 +1038,6 @@ function setupPointer() {
 // ---------------- boot ----------------
 function boot(hotData) {
   R = new Renderer($('game'));
-  R.snap2 = makeCanvas(W, H); R.snap2c = R.snap2.getContext('2d');
   PSPR = buildPlayerSprites();
   load();
   if (hotData && hotData.save) { try { const d = hotData.save; G.found = d.found || G.found; G.habId = d.hab || G.habId; G.hour = d.hour || G.hour; G.day = d.day || G.day; } catch (e) { /* ignore */ } }
