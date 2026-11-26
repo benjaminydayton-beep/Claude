@@ -1,0 +1,156 @@
+<title>The Meridian Ledger</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=IM+Fell+English+SC&family=Crimson+Pro:ital,wght@0,400;0,500;0,600;1,400&display=swap">
+<style>
+/* Layout: a captain's chart-table. A hand-inked sea chart fills the left, the merchant's ledger (market, yard, tavern, counting-house, journal) sits on the right, the ship's log runs beneath. Single committed look: walnut desk, vellum, iron-gall ink, brass and sealing wax. */
+:root{
+  --desk:#1d1510; --desk-2:#2a1f17; --desk-3:#3a2b1f;
+  --vellum:#ead9b4; --vellum-2:#dcc597; --vellum-3:#c9ae7a;
+  --ink:#2b1d12; --ink-2:#5a4330; --ink-faint:#8a7055;
+  --brass:#c99a3e; --brass-hi:#efc874; --wax:#9b2a22; --wax-hi:#c2463a;
+  --sea:#3d6b6a; --good:#3f6b2c; --bad:#9b2a22;
+  --display:"IM Fell English SC","IM Fell English",Garamond,"Times New Roman",serif;
+  --fell:"IM Fell English",Garamond,"Times New Roman",serif;
+  --body:"Crimson Pro",Garamond,Georgia,"Times New Roman",serif;
+  color-scheme:dark;
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{background:var(--desk);color:var(--vellum)}
+body{font-family:var(--body);font-size:17px;line-height:1.4;
+  background:radial-gradient(ellipse at 30% 0%,#3a2a1d 0%,var(--desk) 60%),var(--desk)}
+button{font:inherit;color:inherit;cursor:pointer}
+button:focus-visible,input:focus-visible{outline:2px solid var(--brass-hi);outline-offset:2px}
+.app{max-width:1440px;margin:0 auto;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:14px 28px;display:flex;flex-direction:column;gap:12px}
+.num{font-variant-numeric:tabular-nums lining-nums}
+
+/* masthead */
+.mast{display:flex;flex-wrap:wrap;align-items:center;gap:10px 22px;border-bottom:1px solid var(--desk-3);padding-bottom:10px}
+.brand{font-family:var(--display);font-size:28px;letter-spacing:.04em;color:var(--brass-hi);line-height:1;margin:0}
+.brand small{display:block;font-family:var(--fell);font-style:italic;font-size:14px;color:var(--vellum-3);letter-spacing:0;margin-top:4px}
+.stats{display:flex;flex-wrap:wrap;gap:6px 18px;margin-left:auto}
+.stat{display:flex;flex-direction:column;min-width:0}
+.stat b{font-family:var(--display);font-weight:400;font-size:12px;letter-spacing:.12em;color:var(--vellum-3)}
+.stat span{font-size:20px;font-weight:600;color:var(--vellum)}
+.stat.debt span{color:var(--wax-hi)}
+.stat.coin span{color:var(--brass-hi)}
+.iconbtn{background:transparent;border:1px solid var(--desk-3);border-radius:3px;padding:4px 10px;color:var(--vellum-3);font-size:14px}
+.iconbtn:hover{color:var(--vellum);border-color:var(--brass)}
+
+/* main grid */
+.main{display:grid;grid-template-columns:minmax(0,1.45fr) minmax(0,1fr);gap:14px;align-items:start}
+@media (max-width:980px){.main{grid-template-columns:1fr}}
+.chart{position:relative;border:10px solid var(--desk-3);border-image:linear-gradient(135deg,#4a3626,#2a1d14 40%,#5a4330 70%,#2a1d14) 1;box-shadow:0 14px 40px rgba(0,0,0,.55),inset 0 0 0 1px #000;background:var(--vellum)}
+.chart canvas{display:block;width:100%;height:auto;aspect-ratio:1000/680;max-width:100%;cursor:crosshair}
+.voyage{position:absolute;left:12px;right:12px;bottom:12px;display:flex;align-items:center;gap:12px;background:rgba(43,29,18,.88);color:var(--vellum);padding:8px 12px;border:1px solid var(--brass);font-family:var(--fell)}
+.voyage .bar{flex:1;height:6px;background:var(--desk-3);position:relative}
+.voyage .bar i{position:absolute;inset:0 auto 0 0;background:var(--brass-hi);width:0}
+.tip{position:absolute;pointer-events:none;background:var(--vellum);color:var(--ink);border:1px solid var(--ink-2);padding:6px 9px;font-size:14px;max-width:240px;box-shadow:0 4px 12px rgba(0,0,0,.35);line-height:1.25}
+.tip b{font-family:var(--display);font-weight:400;font-size:16px;display:block}
+
+/* ledger panel */
+.ledger{background:var(--vellum);color:var(--ink);box-shadow:0 14px 40px rgba(0,0,0,.5);position:relative;min-width:0;
+  background-image:radial-gradient(ellipse at 20% 10%,rgba(255,255,255,.35),transparent 55%),radial-gradient(ellipse at 90% 100%,rgba(120,80,30,.22),transparent 60%);}
+.ledger::after{content:"";position:absolute;inset:0;pointer-events:none;box-shadow:inset 0 0 60px rgba(90,60,20,.35)}
+.porthead{padding:16px 18px 8px;border-bottom:1px solid var(--vellum-3)}
+.porthead h2{font-family:var(--display);font-weight:400;font-size:30px;margin:0;line-height:1;text-wrap:balance}
+.porthead .sub{font-family:var(--fell);font-style:italic;color:var(--ink-2);font-size:15px;margin-top:4px}
+.tabs{display:flex;flex-wrap:wrap;gap:0;border-bottom:1px solid var(--vellum-3);padding:0 10px}
+.tabs button{background:none;border:none;padding:9px 10px 7px;font-family:var(--display);font-size:15px;letter-spacing:.06em;color:var(--ink-2);border-bottom:2px solid transparent}
+.tabs button[aria-selected="true"]{color:var(--wax);border-bottom-color:var(--wax)}
+.tabs button:hover{color:var(--ink)}
+.pane{padding:12px 18px 18px;max-height:640px;overflow:auto;position:relative;z-index:1}
+.pane h3{font-family:var(--display);font-weight:400;font-size:18px;margin:12px 0 6px;letter-spacing:.04em}
+.pane p{margin:6px 0}
+.muted{color:var(--ink-2)}
+.italic{font-family:var(--fell);font-style:italic}
+
+/* market table */
+table.mk{width:100%;border-collapse:collapse;font-size:16px}
+.mk th{font-family:var(--display);font-weight:400;font-size:12px;letter-spacing:.1em;text-align:right;color:var(--ink-2);border-bottom:1px solid var(--ink-2);padding:4px 4px}
+.mk th:first-child{text-align:left}
+.mk td{padding:5px 4px;border-bottom:1px dotted var(--vellum-3);text-align:right;white-space:nowrap}
+.mk td:first-child{text-align:left;white-space:normal}
+.mk .gname{font-weight:600}
+.mk .gnote{display:block;font-size:12px;color:var(--ink-faint);font-style:italic;line-height:1.1}
+.cheap{color:var(--good);font-weight:600}
+.dear{color:var(--wax);font-weight:600}
+.btn{background:var(--ink);color:var(--vellum);border:1px solid var(--ink);padding:3px 9px;font-size:14px;border-radius:2px;line-height:1.2}
+.btn:hover{background:var(--wax)}
+.btn.ghost{background:transparent;color:var(--ink)}
+.btn.ghost:hover{background:var(--vellum-2)}
+.btn.big{padding:7px 16px;font-size:16px;font-family:var(--display);letter-spacing:.06em}
+.btn:disabled{opacity:.35;cursor:not-allowed;background:var(--ink)}
+.btns{display:inline-flex;gap:3px}
+.hold{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;font-size:15px;margin-bottom:6px}
+.meter{height:8px;background:var(--vellum-2);border:1px solid var(--ink-2);position:relative;margin-top:3px}
+.meter i{position:absolute;inset:0 auto 0 0;background:var(--ink-2)}
+.card{border:1px solid var(--vellum-3);padding:10px 12px;margin:8px 0;background:rgba(255,255,255,.18)}
+.card h4{margin:0 0 2px;font-family:var(--display);font-weight:400;font-size:17px}
+.row{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:2px 14px;font-size:15px}
+.kv dt{color:var(--ink-2)}
+.kv dd{margin:0;font-weight:600}
+.rumor{border-left:3px solid var(--wax);padding:4px 10px;margin:8px 0;font-family:var(--fell);font-style:italic}
+.codex details{border-bottom:1px dotted var(--vellum-3);padding:6px 0}
+.codex summary{cursor:pointer;font-family:var(--display);font-size:16px}
+.codex .locked{color:var(--ink-faint)}
+.quest{display:flex;gap:10px;align-items:flex-start}
+.quest .seal{flex:none;width:22px;height:22px;border-radius:50%;background:var(--vellum-2);border:1px solid var(--ink-2);margin-top:2px}
+.quest.done .seal{background:var(--wax);border-color:var(--wax)}
+
+/* log */
+.log{background:var(--desk-2);border:1px solid var(--desk-3);padding:10px 14px;max-height:170px;overflow:auto;font-size:15px;font-family:var(--fell)}
+.log h3{margin:0 0 4px;font-family:var(--display);font-weight:400;font-size:14px;letter-spacing:.14em;color:var(--vellum-3)}
+.log p{margin:2px 0;color:var(--vellum-2)}
+.log p .d{color:var(--brass);margin-right:8px;font-variant-numeric:tabular-nums}
+.log p.good{color:#b9d79c}.log p.bad{color:#e69a8c}.log p.story{color:var(--brass-hi);font-style:italic}
+
+/* modal letter */
+.veil{position:fixed;inset:0;background:rgba(10,6,3,.72);display:flex;align-items:center;justify-content:center;z-index:50;padding:16px;padding-top:calc(16px + env(safe-area-inset-top,0px));padding-bottom:calc(16px + env(safe-area-inset-bottom,0px))}
+.letter{background:var(--vellum);color:var(--ink);max-width:620px;width:100%;max-height:100%;overflow:auto;padding:26px 30px 22px;position:relative;box-shadow:0 20px 60px rgba(0,0,0,.6);
+  background-image:radial-gradient(ellipse at 15% 0%,rgba(255,255,255,.4),transparent 50%),radial-gradient(ellipse at 100% 100%,rgba(120,80,30,.3),transparent 60%);animation:unfurl .35s ease-out}
+@keyframes unfurl{from{transform:translateY(10px) scale(.98);opacity:0}to{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){.letter{animation:none}}
+.letter h2{font-family:var(--display);font-weight:400;font-size:28px;margin:0 0 4px;padding-right:64px;line-height:1.05;text-wrap:balance}
+.letter .dateline{padding-right:64px;font-family:var(--fell);font-style:italic;color:var(--ink-2);margin-bottom:12px}
+.letter .body{font-family:var(--fell);font-size:18px;line-height:1.45}
+.letter .body p{margin:0 0 10px}
+.letter .body.drop p:first-child::first-letter{font-family:var(--display);font-size:46px;float:left;line-height:.9;margin:4px 6px 0 0;color:var(--wax)}
+.letter .choices{display:flex;flex-direction:column;gap:6px;margin-top:14px}
+.letter .choices .btn{text-align:left;padding:8px 12px;font-size:16px}
+.letter .choices .btn small{display:block;opacity:.75;font-size:13px}
+.seal-mark{position:absolute;right:22px;top:18px;width:54px;height:54px;border-radius:50%;background:radial-gradient(circle at 35% 35%,var(--wax-hi),var(--wax) 60%,#6b1914);box-shadow:0 2px 4px rgba(0,0,0,.4);display:flex;align-items:center;justify-content:center;font-family:var(--display);color:#f3c9b8;font-size:20px}
+.letter input{font:inherit;font-family:var(--fell);font-size:20px;background:transparent;border:none;border-bottom:1px solid var(--ink-2);color:var(--ink);padding:4px 2px;width:100%}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(18px + env(safe-area-inset-bottom,0px));background:var(--ink);color:var(--vellum);border:1px solid var(--brass);padding:8px 16px;font-family:var(--fell);z-index:60;max-width:calc(100% - 32px)}
+.qty{display:flex;align-items:center;gap:6px;margin:10px 0}
+.qty input[type=range]{flex:1;accent-color:var(--wax)}
+</style>
+
+<div class="app">
+  <header class="mast">
+    <h1 class="brand">The Meridian Ledger<small>A merchant's chronicle of the Mer Ardent, Anno Landfall 1743</small></h1>
+    <div class="stats" id="stats"></div>
+    <button class="iconbtn" id="soundBtn" type="button" aria-label="Toggle sound">Sound: off</button>
+  </header>
+  <div class="main">
+    <div class="chart" id="chartWrap">
+      <canvas id="map" width="2000" height="1360" aria-label="Sea chart of the Mer Ardent. Click a port to set sail."></canvas>
+      <div class="voyage" id="voyage" hidden><span id="voyTxt"></span><div class="bar"><i id="voyBar"></i></div></div>
+      <div class="tip" id="tip" hidden></div>
+    </div>
+    <section class="ledger" aria-live="polite">
+      <div class="porthead" id="porthead"></div>
+      <nav class="tabs" role="tablist" id="tabs"></nav>
+      <div class="pane" id="pane"></div>
+    </section>
+  </div>
+  <section class="log" id="log"><h3>Ship's Log</h3></section>
+</div>
+<div id="modalRoot"></div>
+
+<script src="world.js"></script>
+<script src="chart.js"></script>
+<script src="game.js"></script>
